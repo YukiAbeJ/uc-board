@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>医療データ二次利用UC｜ディスカッション・ボード（公開版 v3.1）</title>
+<title>医療データ二次利用UC｜ディスカッション・ボード（公開版 v4）</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#22303F;--mut:#5B6B7C;--line:#C9D6E4;--bg:#F6FAFE;--acc:#1D6FE0}
@@ -40,11 +40,11 @@ dialog{border:1px solid var(--line);border-radius:12px;max-width:660px;width:92%
 @media(max-width:900px){#board,#bwrap{min-width:0}.grid{grid-template-columns:92px 1fr 1fr 1fr}}
 </style></head><body>
 <div class="row">
- <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v3.1</span></h1>
+ <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v4</span></h1>
  <input id="me" placeholder="あなたの名前（★・コメント用）" style="width:210px">
  <span id="cnt" class="note"></span>
  <span style="margin-left:auto"></span>
- <button class="btn btnp" onclick="addNew()">＋ UC追加</button>
+ <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
  <button class="btn" onclick="openIO('export')">書き出し</button>
  <button class="btn" onclick="openIO('import')">取り込み</button>
  <button class="btn btnr" onclick="resetAll()">初期化</button>
@@ -61,7 +61,22 @@ dialog{border:1px solid var(--line);border-radius:12px;max-width:660px;width:92%
  <input id="fq" placeholder="検索" style="width:170px" oninput="renderAll()">
  <span class="note">→線＝UCのつながり（実線＝同一クラスタ内／破線＝クラスタ横断）。クリックで関連フロー強調（上流紫・下流橙）。カード左端の点＝ステータス色。★チップ＝顧客がいそう/うちがやるべき の二軸平均。破線白枠＝新規UC。</span>
 </div>
-<div class="wrap"><div id="board"><div id="bwrap"><svg id="arr"></svg><div id="binner"></div></div></div><div id="panel"></div></div>
+<div id="pgBoard"><div class="wrap"><div id="board"><div id="bwrap"><svg id="arr"></svg><div id="binner"></div></div></div><div id="panel"></div></div></div>
+<div id="pgMap" style="display:none">
+ <div class="row" style="align-items:flex-end">
+  <div><div class="lbl" style="margin:0">横軸（X）</div><select id="mx" onchange="mPresetOff();renderMap()"></select></div>
+  <div><div class="lbl" style="margin:0">縦軸（Y）</div><select id="my" onchange="mPresetOff();renderMap()"></select></div>
+  <span class="lbl" style="margin:0 0 6px 8px">レンズ：</span><span id="mpre"></span>
+  <span class="note" style="margin-left:auto">チップ色＝時間軸：<span class="axchip" style="background:#A8D4F7;color:#17293D">短期</span><span class="axchip" style="background:#4A90EC;color:#fff">中期</span><span class="axchip" style="background:#1D4F9E;color:#fff">長期</span>｜白破線＝新規（6軸未評価は下段トレイ）｜矢印＝UCの繋がり（実線＝クラスタ内／破線＝横断）。クリックで接続を強調</span>
+ </div>
+ <div id="minsight" class="frame" style="font-size:12.5px;background:#FFF6E3;border:1px solid #F2CE7B;border-radius:8px;padding:8px 12px;margin-bottom:8px;line-height:1.8"></div>
+ <div id="mwrap" style="position:relative;background:#fff;border:1px solid #C9D6E4;border-radius:12px;padding:8px 8px 8px 52px">
+  <svg id="marr" style="position:absolute;inset:0;pointer-events:none;z-index:3"></svg>
+  <div id="mgrid"></div>
+ </div>
+ <div id="mtray" class="note" style="margin-top:8px"></div>
+ <div id="mpanel" style="display:none;position:sticky;bottom:8px;background:#fff;border:2px solid #1D6FE0;border-radius:10px;padding:10px 14px;margin-top:10px;box-shadow:0 4px 14px rgba(29,111,224,.18)"></div>
+</div>
 <p class="note" style="margin-top:10px;border-top:1px solid var(--line);padding-top:6px">
 時間軸：短期＝統計加工データ／中期＝仮名化・突合（因果推論）／長期＝個別データの取り扱い。判定S/A/B/C＝6軸合計（S≧22, A20-21, B17-19, C≦16）。
 <b>公的DBの正式名称</b>：NDB＝匿名医療保険等関連情報データベース（高確法）／介護DB＝介護保険総合データベース（介護保険法）／DPCDB＝匿名診療等関連情報データベース（健康保険法）／全国がん登録DB（がん登録推進法）／難病DB・小慢DB（2024年4月に法定化・第三者提供制度化）。NDBは現行で介護DB・DPCDB等と連結可能、死亡情報の収載・連結が進展中。<br>
@@ -320,4 +335,118 @@ function doImport(replace){
 }
 function renderAll(){renderAxBar();renderBoard();renderPanel()}
 renderAll();
+
+// ======== 2軸マッピング ========
+let view="board", mxi=1, myi=2, preIdx=0, msel=null;
+const TCOL={"短期":["#A8D4F7","#17293D"],"中期":["#4A90EC","#FFFFFF"],"長期":["#1D4F9E","#FFFFFF"]};
+const PRESETS=[
+ {n:"市場性：①財布×②支払い意思",x:1,y:2,q:["確実な入口（小さくても払い手明確）","本命市場（大きく・払い手明確）","劣後・保留候補","財源設計マター（大市場だが払い手不在→U48系で解く）"],
+  note:"右下は「捨てる」ではなく予防ファイナンス（U48/U48L）の対象リストとして読む。"},
+ {n:"実行性：③フィージビリティ×④意思決定速度",x:0,y:3,q:["顧客は速いがデータが重い→簡易データセット/HIC設計で右へ動かす","即PoC（今年度動く）","中長期仕込み","作れるが決まらない→意思決定者・予算科目の再設定"],
+  note:"NDBは特別抽出（約1年）と簡易セット＋HIC（最短7日）で③が変わる＝データ設計で位置を動かせる軸。"},
+ {n:"戦略：⑤協業差別化×⑥制度インパクト",x:4,y:5,q:["制度は動くが差別化弱→体制・協業で補強","北極星コア（独自性×制度接続）","優先度低","独自だが制度接続弱→市場性テーマ側へ整理"],
+  note:"右上が公益性起点（⑥）の本丸。左上は他社と組んででも取る領域。"},
+ {n:"本命度：②支払い意思×⑥制度インパクト",x:2,y:5,q:["制度先行（公費・政策で押す）","稼ぎながら制度を変える理想形","再考","商用特化（市場性テーマと役割分担）"],
+  note:"理想形が空に近い場合、短期入口→中期本丸の「時間差」で埋める設計になっているかを矢印で確認する。"}];
+function setView(v){view=v;
+ document.getElementById("pgBoard").style.display=v==="board"?"":"none";
+ document.getElementById("pgMap").style.display=v==="map"?"":"none";
+ document.getElementById("navB").style.cssText=v==="board"?"background:#1D6FE0;color:#fff;border:none":"";
+ document.getElementById("navM").style.cssText=v==="map"?"background:#1D6FE0;color:#fff;border:none":"";
+ if(v==="map")renderMap();else renderAll();}
+function mPresetOff(){preIdx=-1;renderPre()}
+function setPre(i){preIdx=i;mxi=PRESETS[i].x;myi=PRESETS[i].y;
+ document.getElementById("mx").value=mxi;document.getElementById("my").value=myi;renderMap()}
+function renderPre(){document.getElementById("mpre").innerHTML=PRESETS.map((p,i)=>
+ '<button class="axb'+(i===preIdx?" on":"")+'" style="'+(i===preIdx?"background:#1D6FE0;color:#fff":"")+'" onclick="setPre('+i+')">'+p.n+'</button>').join(" ")}
+function initMapControls(){
+ const ox=AXES.map((a,i)=>'<option value="'+i+'">'+a.label+'</option>').join("");
+ document.getElementById("mx").innerHTML=ox;document.getElementById("my").innerHTML=ox;
+ document.getElementById("mx").value=mxi;document.getElementById("my").value=myi;renderPre();}
+function mval(u,ai){return u.ax?u.ax[AXES[ai].i]:null}
+function renderMap(){
+ mxi=+document.getElementById("mx").value; myi=+document.getElementById("my").value;
+ if(mxi===myi){document.getElementById("minsight").innerHTML="X軸とY軸には異なる評価軸を選択してください。";document.getElementById("mgrid").innerHTML="";return}
+ renderPre();
+ const AX=AXES[mxi], AY=AXES[myi];
+ const q = preIdx>=0?PRESETS[preIdx].q:["縦軸が高い","高×高：優先","低×低","横軸が高い"];
+ const pnote = preIdx>=0?PRESETS[preIdx].note:"";
+ // 5x5グリッド（Y5上→Y1下）
+ let g='<div style="display:grid;grid-template-columns:34px repeat(5,1fr);gap:4px">';
+ for(let y=5;y>=1;y--){
+  g+='<div style="display:flex;align-items:center;justify-content:center;font-weight:700;color:#5B6B7C">'+y+'</div>';
+  for(let x=1;x<=5;x++){
+   const items=ucs.filter(u=>u.ax&&mval(u,mxi)===x&&mval(u,myi)===y&&match(u));
+   const hi=(x>=4&&y>=4), lo=(x<=2&&y<=2);
+   g+='<div style="min-height:86px;border-radius:8px;padding:4px;background:'+(hi?"#FFF6E3":lo?"#F2F4F6":(x>=4||y>=4)?"#EDF4FD":"#F7FAFD")+';border:1px '+(hi?"solid #F2CE7B":"solid #E1E8F0")+'">';
+   for(const u of items){
+    const tc=TCOL[u.t]||TCOL["中期"];
+    const st=u.k==="new"?"background:#fff;border:2px dashed #E58318;color:#9A5A0E":u.k==="hold"?"background:#EDF0F3;border:1.5px dashed #8B98A6;color:#4B5866":"background:"+tc[0]+";border:1px solid rgba(20,50,90,.2);color:"+tc[1];
+    const sel2=msel===u.id, rel=msel&&(byId(msel)&&((byId(msel).to||[]).includes(u.id)||(byId(u.id).to||[]).includes(msel)));
+    g+='<div class="mchip" data-mid="'+u.id+'" onclick="mSelect(\''+u.id+'\')" style="'+st+';position:relative;z-index:2;border-radius:6px;padding:3px 6px;margin-bottom:4px;cursor:pointer;font-size:11.5px;font-weight:600;outline:'+(sel2?"3px solid #17293D":rel?"3px solid #E58318":"none")+';outline-offset:1px">'
+      +u.id+(u.st?"★":"")+'｜'+u.tr+'<span style="font-weight:400"> '+esc(u.n.length>15?u.n.slice(0,15)+"…":u.n)+'</span></div>';
+   }
+   g+='</div>';
+  }
+ }
+ g+='<div></div>';
+ for(let x=1;x<=5;x++)g+='<div style="text-align:center;font-weight:700;color:#5B6B7C">'+x+'</div>';
+ g+='</div>';
+ g+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:12.5px;color:#5B6B7C"><span>← '+AX.short+' 低</span><b style="font-size:31px;line-height:1.2;color:#E05A10">横軸：'+AX.label+'</b><span>'+AX.short+' 高 →</span></div>';
+ document.getElementById("mgrid").innerHTML=g;
+ // 象限ラベル（四隅）
+ const lab=(t,pos)=>'<div style="position:absolute;'+pos+';z-index:4;background:rgba(255,255,255,.92);border:1px solid #C9D6E4;border-radius:6px;padding:2px 8px;font-size:11.5px;font-weight:700;color:#33475C;pointer-events:none">'+t+'</div>';
+ document.getElementById("mwrap").insertAdjacentHTML("beforeend","");
+ document.querySelectorAll(".qlab").forEach(e=>e.remove());
+ const w=document.getElementById("mwrap");
+ w.insertAdjacentHTML("beforeend",'<div class="qlab">'+lab(q[0],"top:10px;left:90px")+lab(q[1],"top:10px;right:10px")+lab(q[2],"bottom:34px;left:90px")+lab(q[3],"bottom:34px;right:10px")
+  +'<div style="position:absolute;left:6px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-size:31px;font-weight:800;color:#E05A10;pointer-events:none;letter-spacing:2px">縦軸：'+AY.label+'</div>'+'</div>');
+ // 未評価トレイ
+ const un=ucs.filter(u=>!u.ax&&match(u));
+ document.getElementById("mtray").innerHTML=un.length?("<b>6軸未評価（新規UC）：</b>"+un.map(u=>'<span class="axchip" style="background:#fff;border:1.5px dashed #E58318;color:#9A5A0E;cursor:pointer" onclick="mSelect(\''+u.id+'\')">'+u.id+" "+esc(u.n)+'</span>').join(" ")+"　→ 編集画面で6軸を採点するとマップに反映"):"";
+ // インサイト（エキスパート視点の自動整理）
+ const rated=ucs.filter(u=>u.ax&&match(u));
+ const rt=rated.filter(u=>mval(u,mxi)>=4&&mval(u,myi)>=4).map(u=>u.id);
+ const lowShortFeedingS=rated.filter(u=>u.t==="短期"&&(mval(u,mxi)<=3||mval(u,myi)<=3)&&(u.to||[]).some(t=>byId(t)&&["S","A"].includes(byId(t).tr))).map(u=>u.id+"→"+(u.to||[]).filter(t=>byId(t)&&["S","A"].includes(byId(t).tr)).join("/"));
+ const orphan=rated.filter(u=>u.t==="長期"&&!ups(u.id).length).map(u=>u.id);
+ let ins='<b>右上象限（両軸4以上・'+rt.length+'件）：</b>'+(rt.join("、")||"該当なし")+(pnote?'<br><b>このレンズの読み方：</b>'+pnote:"");
+ ins+='<br><b>象限で切ってはいけないもの（時間軸の繋がり）：</b>低評価でもS/A級の中期・長期UCへ繋がる短期入口は「導線」として保持する'+(lowShortFeedingS.length?"── 該当："+lowShortFeedingS.join("、"):"");
+ if(orphan.length)ins+='<br><b>導線未接続の長期UC（要注意）：</b>'+orphan.join("、")+' ── 短期・中期からの矢印が無い長期構想は宙に浮く。入口UCの追加を検討';
+ document.getElementById("minsight").innerHTML=ins;
+ requestAnimationFrame(drawMapArrows);
+}
+function drawMapArrows(){
+ const bw=document.getElementById("mwrap"), svg=document.getElementById("marr");
+ if(!bw||view!=="map")return;
+ const br=bw.getBoundingClientRect();
+ svg.setAttribute("width",bw.scrollWidth);svg.setAttribute("height",bw.scrollHeight);
+ svg.setAttribute("viewBox","0 0 "+bw.scrollWidth+" "+bw.scrollHeight);
+ const pos={};document.querySelectorAll(".mchip").forEach(el=>{const r=el.getBoundingClientRect();
+  pos[el.dataset.mid]={x1:r.left-br.left,x2:r.right-br.left,y:(r.top+r.bottom)/2-br.top}});
+ let defs='<defs><marker id="mm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1.5 1L8 5L1.5 9" fill="none" stroke="context-stroke" stroke-width="2" stroke-linecap="round"/></marker></defs>';
+ let base='',hot='';
+ for(const u of ucs)for(const t of (u.to||[])){
+  const a=pos[u.id],b=pos[t];if(!a||!b)continue;
+  const cross=byId(t)&&byId(t).c!==u.c, rel=msel&&(u.id===msel||t===msel);
+  const sx=a.x2, tx=b.x1>a.x2+10?b.x1:b.x2, mx=(sx+tx)/2;
+  const d="M"+sx+","+a.y+" C"+mx+","+a.y+" "+mx+","+b.y+" "+tx+","+b.y;
+  const st=rel?'stroke="#E58318" stroke-width="2.6" opacity=".95"':'stroke="#4A90EC" stroke-width="1.1" opacity="'+(msel?0.07:0.30)+'"';
+  const p='<path d="'+d+'" fill="none" '+st+(cross?' stroke-dasharray="6 4"':'')+' marker-end="url(#mm)"/>';
+  if(rel)hot+=p;else base+=p;
+ }
+ svg.innerHTML=defs+base+hot;
+}
+function mSelect(id){msel=id;const u=byId(id);if(!u)return;
+ const p=document.getElementById("mpanel");p.style.display="";
+ const axs=u.ax?axChips(u):'<span class="note">6軸未評価</span>';
+ p.innerHTML='<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+ +'<div style="flex:1;min-width:260px"><b>'+u.id+'｜'+esc(u.n)+'</b>（'+u.c+'・'+u.t+'・判定'+u.tr+(u.st?"・★戦略コア":"")+'）'
+ +'<div style="font-size:13px;margin-top:3px">'+esc(u.s.length>110?u.s.slice(0,110)+"…":u.s)+'</div><div style="margin-top:4px">'+axs+'</div>'
+ +'<div style="font-size:12px;color:#5B6B7C;margin-top:3px">接続：'+((ups(u.id).map(i=>"←"+i).concat((u.to||[]).map(i=>"→"+i)).join("　"))||"—")+'</div></div>'
+ +'<div style="display:flex;flex-direction:column;gap:6px"><button class="btn btnp" onclick="sel=\''+u.id+'\';setView(\'board\')">ボードで詳細</button><button class="btn" onclick="msel=null;document.getElementById(\'mpanel\').style.display=\'none\';renderMap()">閉じる</button></div></div>';
+ renderMap();}
+window.addEventListener("resize",()=>{if(view==="map")requestAnimationFrame(drawMapArrows)});
+initMapControls();
+setPre(0);
+
 </script></body></html>
