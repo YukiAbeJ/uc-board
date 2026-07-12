@@ -44,7 +44,7 @@ dialog{border:1px solid var(--line);border-radius:12px;max-width:660px;width:92%
  <input id="me" placeholder="あなたの名前（★・コメント用）" style="width:210px">
  <span id="cnt" class="note"></span>
  <span style="margin-left:auto"></span>
- <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
+ <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn" id="navS" onclick="setView('summary')">サマリー</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
  <button class="btn" onclick="openIO('export')">書き出し</button>
  <button class="btn" onclick="openIO('import')">取り込み</button>
  <button class="btn btnr" onclick="resetAll()">初期化</button>
@@ -76,6 +76,13 @@ dialog{border:1px solid var(--line);border-radius:12px;max-width:660px;width:92%
  </div>
  <div id="mtray" class="note" style="margin-top:8px"></div>
  <div id="mpanel" style="display:none;position:sticky;bottom:8px;background:#fff;border:2px solid #1D6FE0;border-radius:10px;padding:10px 14px;margin-top:10px;box-shadow:0 4px 14px rgba(29,111,224,.18)"></div>
+</div>
+<div id="pgSummary" style="display:none">
+ <div class="row" style="align-items:flex-end">
+  <span class="lbl" style="margin:0 0 6px 0;font-size:14px">並び替え：</span><span id="srank"></span>
+  <span class="note" style="margin-left:auto">★は「書き出し／取り込み（結合）」で全メンバー分を束ねた後に集計されます。未束ねだとこの端末の票のみ。</span>
+ </div>
+ <div id="ssummary"></div>
 </div>
 <p class="note" style="margin-top:10px;border-top:1px solid var(--line);padding-top:6px">
 時間軸：短期＝統計加工データ／中期＝仮名化・突合（因果推論）／長期＝個別データの取り扱い。判定S/A/B/C＝6軸合計（S≧22, A20-21, B17-19, C≦16）。
@@ -333,6 +340,65 @@ function doImport(replace){
   saveD();saveS();io.close();alert("取り込み完了");
  }catch(e){alert("JSONの解析に失敗しました")}
 }
+
+// ======== サマリー（関心ランキング・未投票・PoC候補） ========
+let srankMode="both";
+function renderSrankBar(){
+ const opts=[["both","関心度（顧客×社内の合算）"],["m","顧客がいそう順"],["f","うちがやるべき順"],["novote","未投票が多い順"],["core","戦略コア★のみ"]];
+ document.getElementById("srank").innerHTML=opts.map(o=>'<button class="axb'+(o[0]===srankMode?" on":"")+'" style="'+(o[0]===srankMode?"background:#1D6FE0;color:#fff":"")+'" onclick="srankMode=\''+o[0]+'\';renderSummary()">'+o[1]+'</button>').join(" ");
+}
+function renderSummary(){
+ renderSrankBar();
+ const me_=me();
+ const rows=ucs.map(u=>{
+   const m=vstat(u.id,"m"), f=vstat(u.id,"f");
+   const mAvg=m.avg?parseFloat(m.avg):0, fAvg=f.avg?parseFloat(f.avg):0;
+   const n=Math.max(m.n,f.n);
+   const both=(mAvg+fAvg);
+   const mine=(soc.votes2[u.id]&&soc.votes2[u.id][me_])||null;
+   const notVoted = me_ && (!mine || (!mine.m&&!mine.f));
+   return {u,mAvg,fAvg,n,both,mN:m.n,fN:f.n,notVoted};
+ });
+ let list=rows.slice();
+ if(srankMode==="both") list.sort((a,b)=>b.both-a.both||b.n-a.n);
+ else if(srankMode==="m") list.sort((a,b)=>b.mAvg-a.mAvg||b.mN-a.mN);
+ else if(srankMode==="f") list.sort((a,b)=>b.fAvg-a.fAvg||b.fN-a.fN);
+ else if(srankMode==="novote"){ list=rows.filter(r=>r.n===0 || r.notVoted); list.sort((a,b)=>a.n-b.n); }
+ else if(srankMode==="core"){ list=rows.filter(r=>r.u.st); list.sort((a,b)=>b.both-a.both); }
+ // 集計ヘッダ
+ const voted=rows.filter(r=>r.n>0).length, un=rows.filter(r=>r.n===0).length;
+ const myDone = me_?rows.filter(r=>{const mv=soc.votes2[r.u.id]&&soc.votes2[r.u.id][me_];return mv&&(mv.m||mv.f)}).length:0;
+ let voters=new Set(); Object.values(soc.votes2||{}).forEach(v=>Object.keys(v).forEach(n=>voters.add(n)));
+ let head='<div class="frame" style="background:#FFF6E3;border:1px solid #F2CE7B;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:13px;line-height:1.8">'
+  +'<b>投票状況</b>：評価済み '+voted+' 件／未評価 '+un+' 件（全'+rows.length+'件）｜参加者 '+voters.size+' 名'
+  +(me_?'｜<b>あなた（'+me_+'）</b>の投票済み '+myDone+' 件・未投票 '+(rows.length-myDone)+' 件':'｜<span style="color:#B03535">名前未入力（上部で入力すると自分の未投票がわかります）</span>')
+  +(voters.size<=1?'　<span style="color:#B03535">※現在この端末の票のみ。全員分は「取り込み（結合）」で束ねてください</span>':'')
+  +'</div>';
+ // テーブル
+ let t='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'
+  +['#','ID','ユースケース','クラスタ','時間軸','判定','顧客がいそう','うちがやるべき','投票数','状態'].map((x,i)=>'<th style="position:sticky;top:0;background:#1F4E79;color:#fff;padding:6px 8px;text-align:'+(i>=6&&i<=8?'center':'left')+';border:1px solid #C9D6E4">'+x+'</th>').join("")+'</tr></thead><tbody>';
+ const bar=(v)=>{ if(!v)return '<span class="note">—</span>'; const w=Math.round(v/5*60); return '<span style="display:inline-block;width:60px;height:10px;background:#EDF0F3;border-radius:5px;vertical-align:middle;position:relative"><span style="position:absolute;left:0;top:0;height:10px;width:'+w+'px;background:#1D6FE0;border-radius:5px"></span></span> '+v.toFixed(1); };
+ const barP=(v)=>{ if(!v)return '<span class="note">—</span>'; const w=Math.round(v/5*60); return '<span style="display:inline-block;width:60px;height:10px;background:#EDF0F3;border-radius:5px;vertical-align:middle;position:relative"><span style="position:absolute;left:0;top:0;height:10px;width:'+w+'px;background:#D4408A;border-radius:5px"></span></span> '+v.toFixed(1); };
+ list.forEach((r,i)=>{
+   const u=r.u; const cl=CL[u.c]?{name:CL[u.c][0],color:CL[u.c][1]}:null;
+   const stTxt=r.n===0?'<span style="color:#B03535">未評価</span>':(r.notVoted?'<span style="color:#E58318">あなた未投票</span>':'評価あり');
+   t+='<tr style="cursor:pointer;background:'+(i%2?'#F7FAFD':'#fff')+'" onclick="sel=\''+u.id+'\';setView(\'board\')">'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0;color:#5B6B7C">'+(i+1)+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0;font-weight:700">'+u.id+(u.st?' ★':'')+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0">'+esc(u.n)+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0;color:'+(cl?cl.color:'#5B6B7C')+'">'+(cl?esc(cl.name):u.c)+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0">'+u.t+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0">'+u.tr+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0;text-align:center">'+bar(r.mAvg)+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0;text-align:center">'+barP(r.fAvg)+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0;text-align:center">'+(r.n||0)+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0">'+stTxt+'</td></tr>';
+ });
+ t+='</tbody></table>';
+ if(list.length===0) t='<div class="note" style="padding:20px;text-align:center">該当なし</div>';
+ document.getElementById("ssummary").innerHTML=head+'<div style="max-height:70vh;overflow:auto;border:1px solid #C9D6E4;border-radius:8px">'+t+'</div>';
+}
+
 function renderAll(){renderAxBar();renderBoard();renderPanel()}
 renderAll();
 
@@ -351,9 +417,11 @@ const PRESETS=[
 function setView(v){view=v;
  document.getElementById("pgBoard").style.display=v==="board"?"":"none";
  document.getElementById("pgMap").style.display=v==="map"?"":"none";
+ document.getElementById("pgSummary").style.display=v==="summary"?"":"none";
  document.getElementById("navB").style.cssText=v==="board"?"background:#1D6FE0;color:#fff;border:none":"";
  document.getElementById("navM").style.cssText=v==="map"?"background:#1D6FE0;color:#fff;border:none":"";
- if(v==="map")renderMap();else renderAll();}
+ document.getElementById("navS").style.cssText=v==="summary"?"background:#1D6FE0;color:#fff;border:none":"";
+ if(v==="map")renderMap();else if(v==="summary")renderSummary();else renderAll();}
 function mPresetOff(){preIdx=-1;renderPre()}
 function setPre(i){preIdx=i;mxi=PRESETS[i].x;myi=PRESETS[i].y;
  document.getElementById("mx").value=mxi;document.getElementById("my").value=myi;renderMap()}
