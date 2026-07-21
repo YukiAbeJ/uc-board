@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>医療データ二次利用UC｜ディスカッション・ボード（公開版 v5.2）</title>
+<title>医療データ二次利用UC｜ディスカッション・ボード（公開版 v5.3）</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#22303F;--mut:#5B6B7C;--line:#C9D6E4;--bg:#F6FAFE;--acc:#1D6FE0}
@@ -40,7 +40,7 @@ dialog{border:1px solid var(--line);border-radius:12px;max-width:660px;width:92%
 @media(max-width:900px){#board,#bwrap{min-width:0}.grid{grid-template-columns:92px 1fr 1fr 1fr}}
 </style></head><body>
 <div class="row">
- <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v5.2</span></h1>
+ <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v5.3</span></h1>
  <input id="me" placeholder="あなたの名前（★・コメント用）" style="width:210px">
  <span id="cnt" class="note"></span>
  <span style="margin-left:auto"></span>
@@ -86,7 +86,7 @@ dialog{border:1px solid var(--line);border-radius:12px;max-width:660px;width:92%
 </div>
 <p class="note" style="margin-top:10px;border-top:1px solid var(--line);padding-top:6px">
 時間軸：短期＝統計加工データ／中期＝仮名化・突合（因果推論）／長期＝個別データの取り扱い。判定S/A/B/C＝6軸合計（S≧22, A20-21, B17-19, C≦16）。
-<b>公開版v5.2の変更</b>：事例記述の誇張表現を全数精査して修正（制度化済／実証段階／未整備を書き分け）、参考リンクを36UC・53本に拡充。<br><b>公開版v5.1の変更</b>：海外類似事例・国内参考事例にソースURL（🔗リンク）を追加（2026年7月時点で主要リンクをWeb検証済み・事例記述は各領域の誇張がないよう表現精査済み。国内欄が「限定的」のUCは先行事例が薄い＝本取組の先行余地）。編集画面からリンクの追加・修正が可能。研究文献・終了事業・複数国制度の総称など固有の公式サイトが存在しない事例記述はリンク対象外（リンクなし＝出典未検証ではなく対象外の意）。<br><b>公開版v5の変更</b>：CL5を「食と栄養（CL5a）」「住まい・移動・都市（CL5b）」に分割／U43→母子・次世代へ、U31→金融・市場設計へ移動／U60を長期（統合上位ハブ）へ／UC間の導線13本を追加、重複しうるUCに相互参照を注記。旧データ（CL5表記）は読込時に自動で新クラスタへ読み替えます。<br>
+<b>公開版v5.3の変更</b>：端末に保存済みの旧データを開いた場合でも、参考リンク・国内参考事例が自動で補完されるよう修正（各自の★評価・コメントはそのまま保持）。<br><b>公開版v5.2の変更</b>：事例記述の誇張表現を全数精査して修正（制度化済／実証段階／未整備を書き分け）、参考リンクを36UC・53本に拡充。<br><b>公開版v5.1の変更</b>：海外類似事例・国内参考事例にソースURL（🔗リンク）を追加（2026年7月時点で主要リンクをWeb検証済み・事例記述は各領域の誇張がないよう表現精査済み。国内欄が「限定的」のUCは先行事例が薄い＝本取組の先行余地）。編集画面からリンクの追加・修正が可能。研究文献・終了事業・複数国制度の総称など固有の公式サイトが存在しない事例記述はリンク対象外（リンクなし＝出典未検証ではなく対象外の意）。<br><b>公開版v5の変更</b>：CL5を「食と栄養（CL5a）」「住まい・移動・都市（CL5b）」に分割／U43→母子・次世代へ、U31→金融・市場設計へ移動／U60を長期（統合上位ハブ）へ／UC間の導線13本を追加、重複しうるUCに相互参照を注記。旧データ（CL5表記）は読込時に自動で新クラスタへ読み替えます。<br>
 <b>公的DBの正式名称</b>：NDB＝匿名医療保険等関連情報データベース（高確法）／介護DB＝介護保険総合データベース（介護保険法）／DPCDB＝匿名診療等関連情報データベース（健康保険法）／全国がん登録DB（がん登録推進法）／難病DB・小慢DB（2024年4月に法定化・第三者提供制度化）。NDBは現行で介護DB・DPCDB等と連結可能、死亡情報の収載・連結が進展中。<br>
 <b>法制の現況（2026年7月時点）</b>：医療法等の一部を改正する法律（令和7年法律第87号・2025年12月成立）により、公的DB仮名化情報の利用・提供、計12DB間の連結解析、電子カルテ情報DB（仮称）の創設、支払基金の「医療情報基盤・診療報酬審査支払機構」への改組、地域医療構想の見直し等が規定（施行は2026年4月以降段階的）。<br>
 <b>表記ルール</b>：（推察）（仮置き・推察）と付した記述は事実確認前の仮説。Go/No-Go基準・予算時期・PoC欄は全件仮置きであり、4者レビューと個別確認を要する。<br>
@@ -114,11 +114,18 @@ let ucs=load("ucb-data",EMBED), soc=load("ucb-social",{votes:{},comments:{}});
 if(!soc.votes2){soc.votes2={};for(const id in (soc.votes||{})){soc.votes2[id]={};for(const nm in soc.votes[id])soc.votes2[id][nm]={m:soc.votes[id][nm]}}}
 // v5移行：旧クラスタ表記・旧配置を自動で読み替え（取り込み・旧保存データにも適用）
 const CL5FOOD=["U34","U35","U36","N-F1"];
+const EMBMAP=Object.fromEntries(EMBED.map(x=>[x.id,x]));
 function migrate(a){for(const u of a){
  if(u.c==="CL5")u.c=CL5FOOD.includes(u.id)?"CL5A":"CL5B";
  if(u.id==="U43")u.c="CL6";
  if(u.id==="U31")u.c="CL7";
  if(u.id==="U60")u.t="長期";
+ const e=EMBMAP[u.id];
+ if(e){
+  if(!u.jp)u.jp=e.jp||"";
+  if(!Array.isArray(u.refs)||!u.refs.length)u.refs=(e.refs||[]).slice();
+  if(!u.o&&e.o)u.o=e.o;
+ }
 }return a}
 migrate(ucs);
 const STATS=["検討中","ヒアリング済","PoC設計","実行中","制度接続"];
