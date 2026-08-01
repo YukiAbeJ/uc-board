@@ -59,7 +59,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:#1D6FE0;cursor:pointer;
  <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn" id="navS" onclick="setView('summary')">サマリー</button><button class="btn" id="navH" onclick="setView('hassan')">発散</button><button class="btn" id="navP" onclick="setView('poc')">PoC設計</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
  <button class="btn" onclick="openIO('export')" style="background:#0F6E56;color:#fff;border:none;font-weight:700">書き出し</button><span style="font-size:11px;color:#0F6E56;font-weight:700;line-height:1.25;max-width:200px">←UC評価後に押して、ダウンロードしたファイルをJDSCへご提出ください</span>
  <button class="btn" onclick="openIO('import')">取り込み</button>
- <button class="btn btnr" onclick="resetAll()">初期化</button>
+ <button class="btn btnr" onclick="resetAll()">UC初期化</button><button class="btn btnr" onclick="openSummaryReset()">サマリ初期化🔒</button>
 </div>
 <div class="row">
  <span style="font-size:13px;font-weight:700;color:var(--mut)">ヒートマップ軸：</span>
@@ -378,6 +378,36 @@ function saveEdit(orig){
  sel=nd.id;editing=null;saveD()}
 function delUc(id){if(!confirm(id+" を削除しますか？"))return;
  ucs=ucs.filter(u=>u.id!==id).map(u=>({...u,to:(u.to||[]).filter(t=>t!==id)}));sel=null;saveD()}
+// 管理者キー（サマリ初期化用）。変更する場合はこの1行を書き換えてください。
+const ADMIN_KEY="jdsc-uc-2026";
+function openSummaryReset(){
+ const d=document.getElementById("io"),b=document.getElementById("ioBody");
+ b.innerHTML='<b>サマリの初期化（管理者専用）</b>'
+  +'<div class="note" style="margin:6px 0">この端末に保存された<b>★評価・コメント・付箋・投票・ネクストアクション・PoC設計の記入</b>をすべて消去し、サマリ集計をゼロに戻します。<br>UC本体（73件の記述・ステータス・パートナー記入）は保持されます。<br><b>実行前に現在のデータをJSONバックアップとして自動ダウンロードします</b>（後で「取り込み」で復元可能）。</div>'
+  +'<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><span class="note">管理キー：</span>'
+  +'<input id="srKey" type="password" placeholder="管理者から共有されたキー" style="width:220px">'
+  +'<button class="btn" style="background:#B03535;color:#fff;border:none" onclick="doSummaryReset()">バックアップして初期化</button>'
+  +'<button class="btn" onclick="io.close()">閉じる</button></div>'
+  +'<div id="srMsg" class="note" style="margin-top:8px"></div>';
+ d.showModal();
+}
+function doSummaryReset(){
+ const m=document.getElementById("srMsg");
+ const k=(document.getElementById("srKey")||{value:""}).value;
+ if(k!==ADMIN_KEY){m.style.color="#B03535";m.textContent="管理キーが一致しません。初期化は実行されていません。";return}
+ try{
+  // バックアップを自動ダウンロード
+  const j=JSON.stringify({ucs,votes2:soc.votes2,comments:soc.comments,stickies:soc.stickies||{},ivotes:soc.ivotes||{},svotes:soc.svotes||{},islands:soc.islands||{},actions:soc.actions||{},poc:soc.poc||{},by:normName(me())||"管理者",evaluatorId:myId(),exportedAt:new Date().toISOString(),backup:"summary-reset"},null,1);
+  const blob=new Blob([j],{type:"application/json"});
+  const el=document.createElement("a");el.href=URL.createObjectURL(blob);
+  el.download="ucb_backup_"+new Date().toISOString().slice(0,10)+".json";el.click();
+  // social層を初期化
+  soc={votes:{},comments:{},votes2:{},stickies:{},ivotes:{},svotes:{},islands:{},actions:{},poc:{},eids:{}};
+  localStorage.setItem("ucb-social",JSON.stringify(soc));
+  renderAll();
+  m.style.color="#0F6E56";m.textContent="初期化しました。バックアップJSONがダウンロードされています（復元は「取り込み→議論を結合」）。";
+ }catch(e){m.style.color="#B03535";m.textContent="エラー："+(e&&e.message?e.message:e)}
+}
 function resetAll(){if(!confirm("UC本体を初期データ（73件・v5クラスタ）に戻します。★・コメントは保持。よろしいですか？"))return;ucs=JSON.parse(JSON.stringify(EMBED));migrate(ucs);saveD()}
 
 function openIO(mode){
