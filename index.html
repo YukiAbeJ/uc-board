@@ -59,7 +59,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:#1D6FE0;cursor:pointer;
  <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn" id="navS" onclick="setView('summary')">サマリー</button><button class="btn" id="navH" onclick="setView('hassan')">発散</button><button class="btn" id="navP" onclick="setView('poc')">PoC設計</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
  <button class="btn" onclick="openIO('export')" style="background:#0F6E56;color:#fff;border:none;font-weight:700">書き出し</button><span style="font-size:11px;color:#0F6E56;font-weight:700;line-height:1.25;max-width:200px">←UC評価後に押して、ダウンロードしたファイルをJDSCへご提出ください</span>
  <button class="btn" onclick="openIO('import')">取り込み</button>
- <button class="btn btnr" onclick="resetAll()">UC初期化</button><button class="btn btnr" onclick="openSummaryReset()">サマリ初期化🔒</button>
+ <button class="btn btnr" onclick="openSummaryReset()">サマリ初期化🔒</button>
 </div>
 <div class="row">
  <span style="font-size:13px;font-weight:700;color:var(--mut)">ヒートマップ軸：</span>
@@ -408,7 +408,7 @@ function doSummaryReset(){
   m.style.color="#0F6E56";m.textContent="初期化しました。バックアップJSONがダウンロードされています（復元は「取り込み→議論を結合」）。";
  }catch(e){m.style.color="#B03535";m.textContent="エラー："+(e&&e.message?e.message:e)}
 }
-function resetAll(){if(!confirm("UC本体を初期データ（73件・v5クラスタ）に戻します。★・コメントは保持。よろしいですか？"))return;ucs=JSON.parse(JSON.stringify(EMBED));migrate(ucs);saveD()}
+function resetAll(){if(!confirm("【UC初期化】UC本体（73件の記述）を配布時のデータに戻します。\n\n消えるもの：編集した記述の修正・ステータス・パートナー記入欄・「＋UC追加」で追加した独自UC\n残るもの：★評価・コメント・付箋・投票・アクション・PoC設計の記入\n\n実行前に「書き出し」でのバックアップを推奨します。よろしいですか？"))return;ucs=JSON.parse(JSON.stringify(EMBED));migrate(ucs);saveD()}
 
 function openIO(mode){
  const d=document.getElementById("io"),b=document.getElementById("ioBody");
