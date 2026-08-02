@@ -56,7 +56,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:#1D6FE0;cursor:pointer;
  <input id="me" placeholder="あなたの名前（★・コメント用）" style="width:210px">
  <span id="cnt" class="note"></span>
  <span style="margin-left:auto"></span>
- <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn" id="navS" onclick="setView('summary')">サマリー</button><button class="btn" id="navH" onclick="setView('hassan')">発散</button><button class="btn" id="navP" onclick="setView('poc')">PoC設計</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
+ <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn" id="navS" onclick="setView('summary')">サマリー</button><button class="btn" id="navH" onclick="setView('hassan')">発散</button><button class="btn" id="navP" onclick="setView('poc')">PoC設計</button><button class="btn" id="navC" onclick="setView('cmt')">コメント一覧</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
  <button class="btn" onclick="openIO('export')" style="background:#0F6E56;color:#fff;border:none;font-weight:700">書き出し</button><span style="font-size:11px;color:#0F6E56;font-weight:700;line-height:1.25;max-width:200px">←UC評価後に押して、ダウンロードしたファイルをJDSCへご提出ください</span>
  <button class="btn" onclick="openIO('import')">取り込み</button>
  <button class="btn btnr" onclick="openSummaryReset()">サマリ初期化🔒</button>
@@ -95,6 +95,7 @@ v7.9で、入手区分是正前の旧ラベル下で付いた③（条件付き8
 <div id="pgBoard"><div class="wrap"><div id="board"><div id="bwrap"><svg id="arr"></svg><div id="binner"></div></div></div><div id="panel"></div></div></div>
 <div id="pgHassan" style="display:none"></div>
 <div id="pgPoc" style="display:none"></div>
+<div id="pgCmt" style="display:none"></div>
 <div id="pgMap" style="display:none">
  <div class="row" style="align-items:flex-end">
   <div><div class="lbl" style="margin:0">横軸（X）</div><select id="mx" onchange="mPresetOff();renderMap()"></select></div>
@@ -152,6 +153,20 @@ const AXES=[
 AXES[4].i=4; AXES[5].i=5; AXES[3].i=3; AXES[0].i=2; AXES[1].i=0; AXES[2].i=1;
 let axSel=0; // AXES配列上の選択位置（初期=フィージビリティ）
 let ucs=load("ucb-data",EMBED), soc=load("ucb-social",{votes:{},comments:{}});
+// ★集計シード（2026-08-01時点の全員分評価を同梱。各自のローカル票が優先・初回のみ適用）
+const SOC_SEED={"votes2":{"U13":{"辻本":{"m":3,"f":4},"ハナイ":{"m":4,"f":5}},"U48L":{"辻本":{"m":2,"f":5},"ハナイ":{"m":3,"f":4},"MS":{"m":5,"f":5}},"U58":{"辻本":{"m":3,"f":5},"ハナイ":{"m":3,"f":5}},"U28":{"辻本":{"m":3,"f":4},"ハナイ":{"m":4,"f":3},"MS":{"m":4,"f":4}},"U32":{"辻本":{"m":1,"f":4},"ハナイ":{"m":2,"f":3}},"U09":{"ハナイ":{"m":4,"f":3},"MS":{"m":5,"f":5},"阿部祐樹":{"m":4,"f":2}},"U04":{"ハナイ":{"m":2,"f":3},"MS":{"m":2,"f":4},"阿部祐樹":{"m":5,"f":3}},"U07":{"ハナイ":{"m":3,"f":4},"MS":{"m":2,"f":4},"阿部祐樹":{"m":3,"f":2}},"U08":{"ハナイ":{"m":4,"f":4},"MS":{"m":2,"f":4},"阿部祐樹":{"f":1,"m":3}},"U11":{"ハナイ":{"m":5,"f":5},"MS":{"m":5,"f":5}},"U19":{"ハナイ":{"m":4,"f":3},"MS":{"m":5,"f":5},"阿部祐樹":{"m":1}},"U14":{"ハナイ":{"m":3,"f":3},"MS":{"m":5,"f":5}},"N-B1":{"ハナイ":{"m":4,"f":3},"MS":{"m":4,"f":4}},"N-R1":{"ハナイ":{"m":2,"f":2},"MS":{"m":4,"f":4}},"U51":{"ハナイ":{"m":3,"f":4},"MS":{"m":5,"f":5},"阿部祐樹":{"m":5}},"U47":{"ハナイ":{"m":1,"f":2},"MS":{"m":1,"f":1}},"U34":{"ハナイ":{"m":4,"f":5},"MS":{"m":4,"f":4}},"U35":{"ハナイ":{"m":2,"f":2}},"N-H1":{"ハナイ":{"m":3,"f":2}},"N-C1":{"ハナイ":{"m":3,"f":5},"MS":{"m":4,"f":2}},"N-P1":{"ハナイ":{"m":3,"f":2},"MS":{"m":5,"f":5}},"U01":{"ハナイ":{"m":4,"f":3},"阿部祐樹":{"m":2,"f":5}},"U03":{"ハナイ":{"m":3,"f":1}},"U05":{"ハナイ":{"m":2,"f":1}},"U02":{"ハナイ":{"m":5,"f":5}},"U06":{"ハナイ":{"m":5,"f":3}},"U10":{"ハナイ":{"m":2,"f":2},"阿部祐樹":{"m":4}},"U12":{"ハナイ":{"m":4,"f":2}},"U15":{"ハナイ":{"m":3,"f":4}},"U18":{"ハナイ":{"m":3,"f":5}},"U17":{"ハナイ":{"m":4,"f":5}},"U16":{"ハナイ":{"m":2,"f":2}},"U20":{"ハナイ":{"m":4,"f":4}},"U21":{"ハナイ":{"m":3,"f":4}},"U25":{"ハナイ":{"m":3,"f":4}},"U26":{"ハナイ":{"m":4,"f":3}},"U24":{"ハナイ":{"m":3,"f":2}},"U62":{"ハナイ":{"m":1,"f":1}},"U60":{"ハナイ":{"m":3,"f":2}},"U59":{"ハナイ":{"m":4,"f":3}},"U63":{"ハナイ":{"m":4,"f":3}},"U61":{"ハナイ":{"m":3,"f":2}},"U56":{"ハナイ":{"m":2,"f":3}},"U55":{"ハナイ":{"m":2,"f":1}},"U53":{"ハナイ":{"m":2,"f":1}},"U54":{"ハナイ":{"m":3,"f":4}},"U52":{"ハナイ":{"m":2,"f":4}},"U50":{"ハナイ":{"m":3,"f":3}},"U49":{"ハナイ":{"m":5,"f":4}},"U48":{"ハナイ":{"m":4,"f":5}},"U46":{"ハナイ":{"m":4,"f":3}},"U45":{"ハナイ":{"m":2,"f":2}},"N-F1":{"ハナイ":{"m":2,"f":1}},"U44":{"ハナイ":{"m":2,"f":2}},"U39":{"ハナイ":{"m":4,"f":4}},"U43":{"ハナイ":{"m":4,"f":5}},"U41":{"ハナイ":{"m":2,"f":2}},"U30":{"ハナイ":{"m":4,"f":5}},"U33":{"ハナイ":{"m":4,"f":4}},"U29":{"ハナイ":{"m":3,"f":4}},"U27":{"ハナイ":{"m":5,"f":5}},"N-D1":{"ハナイ":{"m":3,"f":4},"MS":{"f":5,"m":4}},"N-L1":{"ハナイ":{"m":4,"f":5},"MS":{"m":5,"f":5}},"U22":{"ハナイ":{"m":3,"f":3},"MS":{"m":5,"f":5}},"U31":{"ハナイ":{"m":4,"f":4},"MS":{"m":4,"f":4}},"U37":{"ハナイ":{"m":3,"f":2},"MS":{"m":3,"f":3}},"U36":{"ハナイ":{"m":2,"f":2}},"U38":{"ハナイ":{"m":4,"f":4}},"U42":{"ハナイ":{"m":4,"f":3}},"U40":{"ハナイ":{"m":4,"f":5}},"N-K1":{"ハナイ":{"m":3,"f":4},"MS":{"m":1,"f":1}},"U64":{"ハナイ":{"m":2,"f":3},"MS":{"m":1,"f":1}},"U57":{"ハナイ":{"m":3,"f":2}}},"comments":{}};
+if(localStorage.getItem("ucb-seed")!=="s1"){
+ try{
+  soc.votes2=soc.votes2||{};soc.comments=soc.comments||{};
+  for(const id in (SOC_SEED.votes2||{})){soc.votes2[id]=soc.votes2[id]||{};
+   for(const nm in SOC_SEED.votes2[id])if(!soc.votes2[id][nm])soc.votes2[id][nm]=SOC_SEED.votes2[id][nm]}
+  for(const id in (SOC_SEED.comments||{})){
+   const cur=soc.comments[id]||[],add=SOC_SEED.comments[id]||[],key=c=>c.name+"|"+c.at+"|"+c.text,seen=new Set(cur.map(key));
+   soc.comments[id]=cur.concat(add.filter(c=>!seen.has(key(c)))).sort((a,b)=>a.at<b.at?-1:1)}
+  localStorage.setItem("ucb-social",JSON.stringify(soc));
+  localStorage.setItem("ucb-seed","s1");
+ }catch(_e){}
+}
 // v6移行：入手区分ラベル是正を既存保存データへ反映（評価者記入のpt・statは保持）
 if(localStorage.getItem("ucb-ver")!=="v7"){
  const _em=Object.fromEntries(EMBED.map(u=>[u.id,u]));
@@ -397,7 +412,7 @@ function doSummaryReset(){
  if(k!==ADMIN_KEY){m.style.color="#B03535";m.textContent="管理キーが一致しません。初期化は実行されていません。";return}
  try{
   // バックアップを自動ダウンロード
-  const j=JSON.stringify({ucs,votes2:soc.votes2,comments:soc.comments,stickies:soc.stickies||{},ivotes:soc.ivotes||{},svotes:soc.svotes||{},islands:soc.islands||{},actions:soc.actions||{},poc:soc.poc||{},by:normName(me())||"管理者",evaluatorId:myId(),exportedAt:new Date().toISOString(),backup:"summary-reset"},null,1);
+  const j=JSON.stringify({ucs,votes2:soc.votes2,comments:soc.comments,stickies:soc.stickies||{},ivotes:soc.ivotes||{},svotes:soc.svotes||{},islands:soc.islands||{},actions:soc.actions||{},poc:soc.poc||{},cm2stk:soc.cm2stk||{},by:normName(me())||"管理者",evaluatorId:myId(),exportedAt:new Date().toISOString(),backup:"summary-reset"},null,1);
   const blob=new Blob([j],{type:"application/json"});
   const el=document.createElement("a");el.href=URL.createObjectURL(blob);
   el.download="ucb_backup_"+new Date().toISOString().slice(0,10)+".json";el.click();
@@ -483,6 +498,7 @@ function doImport(replace){
   for(const aid in (p.actions||{})){const _n=p.actions[aid],_c=soc.actions[aid];if(!_c||((_n.up||_n.at||"")>(_c.up||_c.at||"")))soc.actions[aid]=_n}
   soc.poc=soc.poc||{};
   for(const pid in (p.poc||{})){const _n=p.poc[pid],_c=soc.poc[pid];if(!_c||((_n.up||"")>(_c.up||"")))soc.poc[pid]=_n}
+  soc.cm2stk={...(p.cm2stk||{}),...(soc.cm2stk||{})};
 
   // コメント（重複除去して合算）
   for(const id in (p.comments||{})){
@@ -629,12 +645,14 @@ function setView(v){view=v;
  document.getElementById("pgSummary").style.display=v==="summary"?"":"none";
  document.getElementById("pgHassan").style.display=v==="hassan"?"":"none";
  document.getElementById("pgPoc").style.display=v==="poc"?"":"none";
+ document.getElementById("pgCmt").style.display=v==="cmt"?"":"none";
  document.getElementById("navB").style.cssText=v==="board"?"background:#1D6FE0;color:#fff;border:none":"";
  document.getElementById("navM").style.cssText=v==="map"?"background:#1D6FE0;color:#fff;border:none":"";
  document.getElementById("navS").style.cssText=v==="summary"?"background:#1D6FE0;color:#fff;border:none":"";
  document.getElementById("navH").style.cssText=v==="hassan"?"background:#1D6FE0;color:#fff;border:none":"";
  document.getElementById("navP").style.cssText=v==="poc"?"background:#1D6FE0;color:#fff;border:none":"";
- if(v==="map")renderMap();else if(v==="summary")renderSummary();else if(v==="hassan")renderHassan();else if(v==="poc")renderPoc();else renderAll();}
+ document.getElementById("navC").style.cssText=v==="cmt"?"background:#1D6FE0;color:#fff;border:none":"";
+ if(v==="map")renderMap();else if(v==="summary")renderSummary();else if(v==="hassan")renderHassan();else if(v==="poc")renderPoc();else if(v==="cmt")renderCmt();else renderAll();}
 function mPresetOff(){preIdx=-1;renderPre()}
 function setPre(i){preIdx=i;mxi=PRESETS[i].x;myi=PRESETS[i].y;
  document.getElementById("mx").value=mxi;document.getElementById("my").value=myi;renderMap()}
@@ -977,6 +995,7 @@ function renderHassan(){
    +(s.uc?' <a href="javascript:void(0)" onclick="openPanel(\''+jsq(s.uc)+'\')" style="font-size:11px;color:'+col[2]+';font-weight:700">#'+esc(s.uc)+'</a>':'')
    +stkVote
    +(function(){const e2=hEff(s);return e2!=="未処理"?' <span style="font-size:11.5px;background:'+HDSPC[e2][0]+';color:'+HDSPC[e2][1]+';border-radius:9px;padding:1px 8px;font-weight:700">'+e2+'</span>':''})()
+   +(s.cm?' <span style="font-size:11px;background:#E6F1FB;color:#0C447C;border-radius:9px;padding:1px 7px">UCコメントより</span>':'')
    +(s.from?' <span style="font-size:11px;background:#EEEDFE;color:#3C3489;border-radius:9px;padding:1px 7px">⇦'+esc(((HPHASES.find(p=>p.id===s.from)||{}).n||s.from).split(" ")[0])+'より</span>':'')
    +((hmode!=="act"&&s.dsp&&s.dsp.note)?'<div style="font-size:12px;color:#555;margin-top:3px;border-top:1px dashed #ccc;padding-top:3px">処理メモ：'+esc(s.dsp.note)+'</div>':'')
    +'<div class="who" style="color:'+col[2]+';opacity:.75">'+esc(s.name)+'・'+esc((s.at||"").slice(5,10))
@@ -1138,6 +1157,78 @@ function renderPoc(){
   +PFIELDS.map(([f,l,ph])=>'<div style="'+((f==="hyp"||f==="partners"||f==="risk")?'grid-column:1/-1':'')+'"><span style="font-size:12px;font-weight:700">'+esc(l)+'</span>'
    +'<textarea rows="'+((f==="partners"||f==="risk")?'3':'2')+'" style="width:100%" placeholder="'+esc(ph)+'" onchange="pField(\''+jsq(u.id)+'\',\''+f+'\',this.value)">'+esc(r[f]||"")+'</textarea></div>').join('')
   +'</div></div>';
+ }
+ el.innerHTML=h;
+}
+
+// ======== コメント一覧（UC横断・フィルタ・CSV・発散へ付箋化） ========
+let cq="",cUc="",cNm="";
+const cHash=c=>c.name+"|"+c.at+"|"+c.text;
+function cAll(){
+ const out=[];
+ for(const id in (soc.comments||{}))for(const c of soc.comments[id])out.push({uc:id,...c});
+ return out.sort((a,b)=>a.at<b.at?1:-1);
+}
+function cQ(v){cq=v;renderCmt()}
+function cSetUc(v){cUc=v;renderCmt()}
+function cSetNm(v){cNm=v;renderCmt()}
+function cToStk(uc,name,at){
+ hInit();
+ const c=(soc.comments[uc]||[]).find(x=>x.name===name&&x.at===at);
+ if(!c)return;
+ const h=cHash(c);
+ soc.cm2stk=soc.cm2stk||{};
+ if(soc.cm2stk[h]&&soc.stickies[soc.cm2stk[h]]){hMsg("このコメントは転記済みです（発散ボードの付箋を確認してください）");return}
+ const tag=hVal("cIsl")||hPh().tags[0];
+ const id="S-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ soc.stickies[id]={ph:hph,tag,text:c.text,uc:uc,name:c.name,at:hNow(),cm:1};
+ soc.cm2stk[h]=id;
+ saveS();renderCmt();
+}
+function cCsv(){
+ const q=s=>'"'+String(s==null?"":s).replace(/"/g,'""')+'"';
+ const rows=[["日時","投稿者","UC","テーマ","コメント"].map(q).join(",")];
+ for(const c of cAll()){const u=byId(c.uc);rows.push([c.at,c.name,c.uc,u?u.n:"",c.text].map(q).join(","))}
+ const blob=new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv"});
+ const el=document.createElement("a");el.href=URL.createObjectURL(blob);el.download="uc_comments.csv";el.click();URL.revokeObjectURL(el.href);
+}
+function renderCmt(){
+ hInit();
+ const el=document.getElementById("pgCmt");if(!el)return;
+ const all=cAll();
+ const ucsWith=[...new Set(all.map(c=>c.uc))].sort();
+ const nms=[...new Set(all.map(c=>c.name))].sort();
+ let list=all;
+ if(cUc)list=list.filter(c=>c.uc===cUc);
+ if(cNm)list=list.filter(c=>c.name===cNm);
+ const q=(cq||"").toLowerCase();
+ if(q)list=list.filter(c=>(c.text+c.name+c.uc+((byId(c.uc)||{}).n||"")).toLowerCase().includes(q));
+ const islOpts=hTags().map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('');
+ let h='<div class="row" style="align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0">'
+  +'<b style="font-size:15px">コメント一覧</b><span class="note">全'+all.length+'件（表示 '+list.length+'件）・'+ucsWith.length+' UC・'+nms.length+'名</span>'
+  +'<span style="margin-left:auto"></span><button class="btn" onclick="cCsv()">CSV書き出し</button></div>'
+  +'<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'
+  +'<select onchange="cSetUc(this.value)"><option value="">全UC</option>'+ucsWith.map(u=>'<option'+(u===cUc?' selected':'')+' value="'+esc(u)+'">'+esc(u)+'</option>').join('')+'</select>'
+  +'<select onchange="cSetNm(this.value)"><option value="">全員</option>'+nms.map(n=>'<option'+(n===cNm?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select>'
+  +'<input value="'+esc(cq)+'" oninput="cQ(this.value)" placeholder="キーワード検索" style="flex:1;min-width:180px">'
+  +'<span class="note">付箋化の転記先（'+esc(hPh().n)+'）：</span><select id="cIsl">'+islOpts+'</select></div>';
+ if(!all.length){
+  h+='<div class="hisl" style="padding:16px"><b>まだコメントがありません。</b><div class="note" style="margin-top:6px">各UCの詳細パネル下部のコメント欄に書き込むと、ここに全UC横断で集約されます。★評価と同じく「書き出し」→提出→結合で全員分が集まります。</div></div>';
+ }else if(!list.length){
+  h+='<div class="note">条件に一致するコメントがありません。</div>';
+ }else{
+  h+=list.map(c=>{
+   const u=byId(c.uc);
+   const done=soc.cm2stk&&soc.cm2stk[cHash(c)]&&soc.stickies[soc.cm2stk[cHash(c)]];
+   return '<div class="hisl" style="margin-bottom:8px"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">'
+    +'<b>'+esc(c.name)+'</b><span class="note">'+esc((c.at||"").slice(0,16).replace("T"," "))+'</span>'
+    +'<a href="javascript:void(0)" onclick="openPanel(\''+jsq(c.uc)+'\')" style="font-weight:700">'+esc(c.uc)+'</a>'
+    +'<span class="note">'+esc(u?u.n.slice(0,26):"")+'</span>'
+    +'<span style="margin-left:auto"></span>'
+    +(done?'<span style="font-size:12px;background:#E1F5EE;color:#0F6E56;border-radius:10px;padding:2px 10px;font-weight:700">転記済</span>'
+      :'<button class="btn" style="padding:3px 12px;background:#1D6FE0;color:#fff;border:none" onclick="cToStk(\''+jsq(c.uc)+'\',\''+jsq(c.name)+'\',\''+jsq(c.at)+'\')">発散へ付箋化</button>')
+    +'</div><div style="font-size:14px;margin-top:5px;white-space:pre-wrap">'+esc(c.text)+'</div></div>';
+  }).join('');
  }
  el.innerHTML=h;
 }
