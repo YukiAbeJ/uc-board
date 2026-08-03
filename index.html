@@ -594,25 +594,56 @@ function dlSummaryCSV(){
  const list=ucs.map(u=>{
   const m=vstat(u.id,"m"),f=vstat(u.id,"f");
   const mA=m.avg?parseFloat(m.avg):0,fA=f.avg?parseFloat(f.avg):0;
-  return {u,mA,fA,both:mA+fA,n:Math.max(m.n,f.n)};
- }).sort((a,b)=>b.both-a.both||b.n-a.n);
- const rows=[["順位","UC_ID","UC名","クラスタ","時間軸","判定","戦略コア","顧客がいそう平均","うちがやるべき平均","合算","投票数"]];
- list.forEach((r,i)=>rows.push([i+1,r.u.id,r.u.n,clName(r.u.c),r.u.t,r.u.tr,r.u.st?"★":"",
-   r.mA?r.mA.toFixed(1):"",r.fA?r.fA.toFixed(1):"",r.both?r.both.toFixed(1):"",r.n||0]));
+  const axSum=(u.ax&&u.ax.length)?u.ax.reduce((x,y)=>x+(y||0),0):null;
+  return {u,mA,fA,both:mA+fA,n:Math.max(m.n,f.n),axSum};
+ }).sort((a,b)=>(b.both-a.both)
+   ||(((b.axSum===null?-1:b.axSum))-((a.axSum===null?-1:a.axSum)))
+   ||(TIMES.indexOf(a.u.t)-TIMES.indexOf(b.u.t))
+   ||(b.n-a.n));
+ const rows=[["優先順位","UC_ID","UC名","クラスタ","時間軸","判定","選定区分","顧客がいそう平均","うちがやるべき平均","合算","投票数","6軸計"]];
+ list.forEach((r,i)=>rows.push([i+1,r.u.id,r.u.n,clName(r.u.c),r.u.t,r.u.tr,tierOf(r.u.id),
+   r.mA?r.mA.toFixed(1):"",r.fA?r.fA.toFixed(1):"",r.both?r.both.toFixed(1):"",r.n||0,r.axSum===null?"":r.axSum]));
  dlText(csvPrefix()+"summary-"+csvStamp()+".csv", rows.map(r=>r.map(csvEsc).join(",")).join("\r\n"));
 }
 
 // ======== サマリー（関心ランキング・未投票・PoC候補） ========
 let srankMode="prio";
 let sumKey=null,sumDir=-1;
+let sumMulti=[];
+const MKEYS=[["","（なし）"],["sel","選定区分"],["both","★合算"],["m","顧客がいそう"],["f","うちがやるべき"],["n","投票数"],["ax","6軸計"],["t","時間軸"],["tr","判定"],["c","クラスタ"],["id","ID"]];
+const MDEF=k=>(k==="t"||k==="id"||k==="c"||k==="tr"||k==="sel")?1:-1;
+function mSet(i,k){
+ sumKey=null;
+ if(!k){sumMulti.splice(i);renderSummary();return}
+ sumMulti[i]={k,dir:(sumMulti[i]&&sumMulti[i].k===k)?sumMulti[i].dir:MDEF(k)};
+ sumMulti=sumMulti.slice(0,3).filter(Boolean);
+ renderSummary();
+}
+function mDir(i){if(sumMulti[i]){sumMulti[i].dir=-sumMulti[i].dir;renderSummary()}}
+function mClear(){sumMulti=[];renderSummary()}
+function sumVal(r,k){
+ switch(k){
+  case "id": return r.u.id;
+  case "c": return r.u.c;
+  case "t": {const i2=TIMES.indexOf(r.u.t);return i2<0?null:i2}
+  case "tr": return ORD[r.u.tr]!==undefined?ORD[r.u.tr]:null;
+  case "m": return r.mAvg||null;
+  case "f": return r.fAvg||null;
+  case "n": return r.n||0;
+  case "ax": return r.axSum;
+  case "both": return r.both||null;
+  case "sel": return TIER_ORDER.indexOf(r.tierV);
+ }
+}
 function sumSortBy(k){
+ sumMulti=[];
  if(sumKey===k){sumDir=-sumDir}
  else{sumKey=k;sumDir=(k==="t"||k==="id"||k==="c"||k==="tr"||k==="sel")?1:-1}
  renderSummary();
 }
 function renderSrankBar(){
  const opts=[["prio","優先度順（★合算→6軸計→期間）"],["both","関心度（顧客×社内の合算）"],["m","顧客がいそう順"],["f","うちがやるべき順"],["novote","未投票が多い順"],["core","戦略コア★のみ"]];
- document.getElementById("srank").innerHTML=opts.map(o=>'<button class="axb'+(o[0]===srankMode?" on":"")+'" style="'+(o[0]===srankMode?"background:#1D6FE0;color:#fff":"")+'" onclick="srankMode=\''+o[0]+'\';sumKey=null;renderSummary()">'+o[1]+'</button>').join(" ");
+ document.getElementById("srank").innerHTML=opts.map(o=>'<button class="axb'+(o[0]===srankMode?" on":"")+'" style="'+(o[0]===srankMode?"background:#1D6FE0;color:#fff":"")+'" onclick="srankMode=\''+o[0]+'\';sumKey=null;sumMulti=[];renderSummary()">'+o[1]+'</button>').join(" ");
 }
 function renderSummary(){
  renderSrankBar();
@@ -639,28 +670,25 @@ function renderSummary(){
  else if(srankMode==="f") list.sort((a,b)=>b.fAvg-a.fAvg||b.fN-a.fN);
  else if(srankMode==="novote"){ list=rows.filter(r=>r.n===0 || r.notVoted); list.sort((a,b)=>a.n-b.n); }
  else if(srankMode==="core"){ list=rows.filter(r=>r.u.st); list.sort((a,b)=>b.both-a.both); }
- // 列ヘッダの並べ替え（ピルの並びに優先）
- if(sumKey){
-  const val=r=>{
-   switch(sumKey){
-    case "id": return r.u.id;
-    case "c": return r.u.c;
-    case "t": {const i2=TIMES.indexOf(r.u.t);return i2<0?null:i2}
-    case "tr": return ORD[r.u.tr]!==undefined?ORD[r.u.tr]:null;
-    case "m": return r.mAvg||null;
-    case "f": return r.fAvg||null;
-    case "n": return r.n||0;
-    case "ax": return r.axSum;
-    case "sel": return TIER_ORDER.indexOf(r.tierV);
-   }
-  };
+ // 並べ替えの優先：多段指定＞列ヘッダ＞ピル
+ const cmp1=(a,b,k,dir)=>{
+  const va=sumVal(a,k),vb=sumVal(b,k);
+  if(va===null&&vb===null)return 0;
+  if(va===null)return 1;
+  if(vb===null)return -1;
+  if(va<vb)return -1*dir;
+  if(va>vb)return 1*dir;
+  return 0;
+ };
+ if(sumMulti.length){
   list.sort((a,b)=>{
-   const va=val(a),vb=val(b);
-   if(va===null&&vb===null)return 0;
-   if(va===null)return 1;
-   if(vb===null)return -1;
-   if(va<vb)return -1*sumDir;
-   if(va>vb)return 1*sumDir;
+   for(const s of sumMulti){const c=cmp1(a,b,s.k,s.dir);if(c)return c}
+   return b.both-a.both||b.n-a.n;
+  });
+ }else if(sumKey){
+  list.sort((a,b)=>{
+   const c=cmp1(a,b,sumKey,sumDir);
+   if(c)return c;
    return sumKey==="sel"?(b.both-a.both||b.n-a.n):0;
   });
  }
@@ -672,15 +700,33 @@ function renderSummary(){
   +'<b>投票状況</b>：評価済み '+voted+' 件／未評価 '+un+' 件（全'+rows.length+'件）｜参加者 '+voters.size+' 名'
   +(me_?'｜<b>あなた（'+me_+'）</b>の投票済み '+myDone+' 件・未投票 '+(rows.length-myDone)+' 件':'｜<span style="color:#B03535">名前未入力（上部で入力すると自分の未投票がわかります）</span>')
   +(voters.size<=1?'　<span style="color:#B03535">※現在この端末の票のみ。全員分は「取り込み（結合）」で束ねてください</span>':'')
-  +'<br><span class="note">列見出し（時間軸・投票数・★・6軸計など）をクリックすると並べ替えできます（再クリックで昇順⇔降順）。</span>'
-  +'</div>';
+  +'<br><span class="note">列見出しクリックで単一ソート（再クリックで昇順⇔降順）。複数条件は下の「並べ替えの優先順」で指定できます。</span>'
+  +'</div>'
+  +(function(){
+    const slot=(i)=>{
+     const cur=sumMulti[i]||null;
+     const opts=MKEYS.map(m=>'<option value="'+m[0]+'"'+((cur?cur.k:"")===m[0]?' selected':'')+'>'+m[1]+'</option>').join('');
+     return '<span class="note" style="font-weight:700">'+(i+1)+'位</span>'
+      +'<select onchange="mSet('+i+',this.value)" style="padding:3px 7px;font-size:13px">'+opts+'</select>'
+      +(cur?'<button class="btn" style="padding:2px 9px;font-size:12.5px" onclick="mDir('+i+')" title="昇順⇔降順">'+(cur.dir===-1?'▼降順':'▲昇順')+'</button>':'');
+    };
+    return '<div class="row" style="gap:7px;align-items:center;flex-wrap:wrap;background:#F4F8FD;border:1px solid #C9DEF5;border-radius:8px;padding:7px 11px;margin-bottom:8px">'
+     +'<b style="font-size:13px;color:#0C447C">並べ替えの優先順</b>'
+     +slot(0)
+     +(sumMulti.length>=1?slot(1):'')
+     +(sumMulti.length>=2?slot(2):'')
+     +(sumMulti.length?'<button class="btn" style="padding:2px 10px;font-size:12.5px" onclick="mClear()">クリア</button>':'')
+     +'<span class="note">例：1位=選定区分・2位=★合算 →「Tier順に、各Tier内は評価の高い順」</span></div>';
+  })();
  // テーブル
- const COLS=[["#",null,"left"],["ID","id","left"],["ユースケース",null,"left"],["クラスタ","c","left"],["時間軸","t","left"],["判定","tr","left"],["区分（優先順）","sel","center"],["顧客がいそう","m","center"],["うちがやるべき","f","center"],["投票数","n","center"],["6軸計","ax","center"],["状態",null,"left"]];
+ const COLS=[["#",null,"left"],["ID","id","left"],["ユースケース",null,"left"],["クラスタ","c","left"],["時間軸","t","left"],["判定","tr","left"],["選定区分","sel","center"],["顧客がいそう","m","center"],["うちがやるべき","f","center"],["投票数","n","center"],["6軸計","ax","center"],["状態",null,"left"]];
  let t='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'
   +COLS.map(c=>{
     const sortable=!!c[1];
-    const on=sumKey===c[1];
-    const arrow=on?(sumDir===-1?" ▼":" ▲"):(sortable?' <span style="opacity:.45">⇅</span>':"");
+    const mi=sumMulti.findIndex(s=>s.k===c[1]);
+    const on=sumKey===c[1]||mi>=0;
+    const arrow=mi>=0?(" "+["①","②","③"][mi]+(sumMulti[mi].dir===-1?"▼":"▲"))
+     :(sumKey===c[1]?(sumDir===-1?" ▼":" ▲"):(sortable?' <span style="opacity:.45">⇅</span>':""));
     return '<th '+(sortable?'onclick="sumSortBy(\''+c[1]+'\')" title="クリックで並べ替え" ':'')
      +'style="position:sticky;top:0;background:'+(on?'#0C447C':'#1F4E79')+';color:#fff;padding:6px 8px;text-align:'+c[2]+';border:1px solid #C9D6E4;white-space:nowrap'+(sortable?';cursor:pointer;user-select:none':'')+'">'+c[0]+arrow+'</th>';
   }).join("")+'</tr></thead><tbody>';
