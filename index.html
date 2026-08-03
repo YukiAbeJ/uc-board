@@ -603,7 +603,7 @@ function dlSummaryCSV(){
 }
 
 // ======== サマリー（関心ランキング・未投票・PoC候補） ========
-let srankMode="both";
+let srankMode="prio";
 let sumKey=null,sumDir=-1;
 function sumSortBy(k){
  if(sumKey===k){sumDir=-sumDir}
@@ -611,7 +611,7 @@ function sumSortBy(k){
  renderSummary();
 }
 function renderSrankBar(){
- const opts=[["both","関心度（顧客×社内の合算）"],["m","顧客がいそう順"],["f","うちがやるべき順"],["novote","未投票が多い順"],["core","戦略コア★のみ"]];
+ const opts=[["prio","優先度順（★合算→6軸計→期間）"],["both","関心度（顧客×社内の合算）"],["m","顧客がいそう順"],["f","うちがやるべき順"],["novote","未投票が多い順"],["core","戦略コア★のみ"]];
  document.getElementById("srank").innerHTML=opts.map(o=>'<button class="axb'+(o[0]===srankMode?" on":"")+'" style="'+(o[0]===srankMode?"background:#1D6FE0;color:#fff":"")+'" onclick="srankMode=\''+o[0]+'\';sumKey=null;renderSummary()">'+o[1]+'</button>').join(" ");
 }
 function renderSummary(){
@@ -629,7 +629,12 @@ function renderSummary(){
    return {u,mAvg,fAvg,n,both,mN:m.n,fN:f.n,axSum,tierV,notVoted};
  });
  let list=rows.slice();
- if(srankMode==="both") list.sort((a,b)=>b.both-a.both||b.n-a.n);
+ if(srankMode==="prio") list.sort((a,b)=>
+   (b.both-a.both)
+   ||(((b.axSum===null?-1:b.axSum))-((a.axSum===null?-1:a.axSum)))
+   ||(TIMES.indexOf(a.u.t)-TIMES.indexOf(b.u.t))
+   ||(b.n-a.n));
+ else if(srankMode==="both") list.sort((a,b)=>b.both-a.both||b.n-a.n);
  else if(srankMode==="m") list.sort((a,b)=>b.mAvg-a.mAvg||b.mN-a.mN);
  else if(srankMode==="f") list.sort((a,b)=>b.fAvg-a.fAvg||b.fN-a.fN);
  else if(srankMode==="novote"){ list=rows.filter(r=>r.n===0 || r.notVoted); list.sort((a,b)=>a.n-b.n); }
