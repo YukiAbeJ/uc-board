@@ -568,9 +568,15 @@ function dlSummaryCSV(){
 
 // ======== サマリー（関心ランキング・未投票・PoC候補） ========
 let srankMode="both";
+let sumKey=null,sumDir=-1;
+function sumSortBy(k){
+ if(sumKey===k){sumDir=-sumDir}
+ else{sumKey=k;sumDir=(k==="t"||k==="id"||k==="c"||k==="tr")?1:-1}
+ renderSummary();
+}
 function renderSrankBar(){
  const opts=[["both","関心度（顧客×社内の合算）"],["m","顧客がいそう順"],["f","うちがやるべき順"],["novote","未投票が多い順"],["core","戦略コア★のみ"]];
- document.getElementById("srank").innerHTML=opts.map(o=>'<button class="axb'+(o[0]===srankMode?" on":"")+'" style="'+(o[0]===srankMode?"background:#1D6FE0;color:#fff":"")+'" onclick="srankMode=\''+o[0]+'\';renderSummary()">'+o[1]+'</button>').join(" ");
+ document.getElementById("srank").innerHTML=opts.map(o=>'<button class="axb'+(o[0]===srankMode?" on":"")+'" style="'+(o[0]===srankMode?"background:#1D6FE0;color:#fff":"")+'" onclick="srankMode=\''+o[0]+'\';sumKey=null;renderSummary()">'+o[1]+'</button>').join(" ");
 }
 function renderSummary(){
  renderSrankBar();
@@ -580,9 +586,10 @@ function renderSummary(){
    const mAvg=m.avg?parseFloat(m.avg):0, fAvg=f.avg?parseFloat(f.avg):0;
    const n=Math.max(m.n,f.n);
    const both=(mAvg+fAvg);
+   const axSum=(u.ax&&u.ax.length)?u.ax.reduce((x,y)=>x+(y||0),0):null;
    const mine=(soc.votes2[u.id]&&soc.votes2[u.id][me_])||null;
    const notVoted = me_ && (!mine || (!mine.m&&!mine.f));
-   return {u,mAvg,fAvg,n,both,mN:m.n,fN:f.n,notVoted};
+   return {u,mAvg,fAvg,n,both,mN:m.n,fN:f.n,axSum,notVoted};
  });
  let list=rows.slice();
  if(srankMode==="both") list.sort((a,b)=>b.both-a.both||b.n-a.n);
@@ -590,6 +597,30 @@ function renderSummary(){
  else if(srankMode==="f") list.sort((a,b)=>b.fAvg-a.fAvg||b.fN-a.fN);
  else if(srankMode==="novote"){ list=rows.filter(r=>r.n===0 || r.notVoted); list.sort((a,b)=>a.n-b.n); }
  else if(srankMode==="core"){ list=rows.filter(r=>r.u.st); list.sort((a,b)=>b.both-a.both); }
+ // 列ヘッダの並べ替え（ピルの並びに優先）
+ if(sumKey){
+  const val=r=>{
+   switch(sumKey){
+    case "id": return r.u.id;
+    case "c": return r.u.c;
+    case "t": {const i2=TIMES.indexOf(r.u.t);return i2<0?null:i2}
+    case "tr": return ORD[r.u.tr]!==undefined?ORD[r.u.tr]:null;
+    case "m": return r.mAvg||null;
+    case "f": return r.fAvg||null;
+    case "n": return r.n||0;
+    case "ax": return r.axSum;
+   }
+  };
+  list.sort((a,b)=>{
+   const va=val(a),vb=val(b);
+   if(va===null&&vb===null)return 0;
+   if(va===null)return 1;
+   if(vb===null)return -1;
+   if(va<vb)return -1*sumDir;
+   if(va>vb)return 1*sumDir;
+   return 0;
+  });
+ }
  // 集計ヘッダ
  const voted=rows.filter(r=>r.n>0).length, un=rows.filter(r=>r.n===0).length;
  const myDone = me_?rows.filter(r=>{const mv=soc.votes2[r.u.id]&&soc.votes2[r.u.id][me_];return mv&&(mv.m||mv.f)}).length:0;
@@ -598,10 +629,18 @@ function renderSummary(){
   +'<b>投票状況</b>：評価済み '+voted+' 件／未評価 '+un+' 件（全'+rows.length+'件）｜参加者 '+voters.size+' 名'
   +(me_?'｜<b>あなた（'+me_+'）</b>の投票済み '+myDone+' 件・未投票 '+(rows.length-myDone)+' 件':'｜<span style="color:#B03535">名前未入力（上部で入力すると自分の未投票がわかります）</span>')
   +(voters.size<=1?'　<span style="color:#B03535">※現在この端末の票のみ。全員分は「取り込み（結合）」で束ねてください</span>':'')
+  +'<br><span class="note">列見出し（時間軸・投票数・★・6軸計など）をクリックすると並べ替えできます（再クリックで昇順⇔降順）。</span>'
   +'</div>';
  // テーブル
+ const COLS=[["#",null,"left"],["ID","id","left"],["ユースケース",null,"left"],["クラスタ","c","left"],["時間軸","t","left"],["判定","tr","left"],["顧客がいそう","m","center"],["うちがやるべき","f","center"],["投票数","n","center"],["6軸計","ax","center"],["状態",null,"left"]];
  let t='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'
-  +['#','ID','ユースケース','クラスタ','時間軸','判定','顧客がいそう','うちがやるべき','投票数','状態'].map((x,i)=>'<th style="position:sticky;top:0;background:#1F4E79;color:#fff;padding:6px 8px;text-align:'+(i>=6&&i<=8?'center':'left')+';border:1px solid #C9D6E4">'+x+'</th>').join("")+'</tr></thead><tbody>';
+  +COLS.map(c=>{
+    const sortable=!!c[1];
+    const on=sumKey===c[1];
+    const arrow=on?(sumDir===-1?" ▼":" ▲"):(sortable?' <span style="opacity:.45">⇅</span>':"");
+    return '<th '+(sortable?'onclick="sumSortBy(\''+c[1]+'\')" title="クリックで並べ替え" ':'')
+     +'style="position:sticky;top:0;background:'+(on?'#0C447C':'#1F4E79')+';color:#fff;padding:6px 8px;text-align:'+c[2]+';border:1px solid #C9D6E4;white-space:nowrap'+(sortable?';cursor:pointer;user-select:none':'')+'">'+c[0]+arrow+'</th>';
+  }).join("")+'</tr></thead><tbody>';
  const bar=(v)=>{ if(!v)return '<span class="note">—</span>'; const w=Math.round(v/5*60); return '<span style="display:inline-block;width:60px;height:10px;background:#EDF0F3;border-radius:5px;vertical-align:middle;position:relative"><span style="position:absolute;left:0;top:0;height:10px;width:'+w+'px;background:#1D6FE0;border-radius:5px"></span></span> '+v.toFixed(1); };
  const barP=(v)=>{ if(!v)return '<span class="note">—</span>'; const w=Math.round(v/5*60); return '<span style="display:inline-block;width:60px;height:10px;background:#EDF0F3;border-radius:5px;vertical-align:middle;position:relative"><span style="position:absolute;left:0;top:0;height:10px;width:'+w+'px;background:#D4408A;border-radius:5px"></span></span> '+v.toFixed(1); };
  list.forEach((r,i)=>{
@@ -617,13 +656,13 @@ function renderSummary(){
     +'<td style="padding:5px 8px;border:1px solid #E1E8F0;text-align:center">'+bar(r.mAvg)+'</td>'
     +'<td style="padding:5px 8px;border:1px solid #E1E8F0;text-align:center">'+barP(r.fAvg)+'</td>'
     +'<td style="padding:5px 8px;border:1px solid #E1E8F0;text-align:center">'+(r.n||0)+'</td>'
+    +'<td style="padding:5px 8px;border:1px solid #E1E8F0;text-align:center">'+(r.axSum===null?'<span class="note">—</span>':'<b>'+r.axSum+'</b><span class="note">/30</span>')+'</td>'
     +'<td style="padding:5px 8px;border:1px solid #E1E8F0">'+stTxt+'</td></tr>';
  });
  t+='</tbody></table>';
  if(list.length===0) t='<div class="note" style="padding:20px;text-align:center">該当なし</div>';
  document.getElementById("ssummary").innerHTML=head+'<div style="max-height:70vh;overflow:auto;border:1px solid #C9D6E4;border-radius:8px">'+t+'</div>';
 }
-
 function renderAll(){migrate(ucs);renderAxBar();renderBoard();renderPanel()}
 renderAll();
 
