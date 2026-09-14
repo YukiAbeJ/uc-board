@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>医療データ二次利用UC｜ディスカッション・ボード（公開版 v6）</title>
+<title>医療データ二次利用UC｜ディスカッション・ボード（公開版 v7.1）</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#22303F;--mut:#5B6B7C;--line:#C9D6E4;--bg:#F6FAFE;--acc:#1D6FE0}
@@ -54,11 +54,11 @@ input[type=checkbox]{width:18px;height:18px;accent-color:#1D6FE0;cursor:pointer;
 .hst-未処理{color:#888}.hst-アクション化{color:#0F6E56;font-weight:700}.hst-UC反映{color:#1D6FE0;font-weight:700}.hst-保留{color:#B07A00}
 </style></head><body>
 <div class="row">
- <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v6</span></h1>
+ <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v7.1（開拓台帳・発散③改）</span></h1>
  <input id="me" placeholder="あなたの名前（★・コメント用）" style="width:210px">
  <span id="cnt" class="note"></span>
  <span style="margin-left:auto"></span>
- <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn" id="navS" onclick="setView('summary')">サマリー</button><button class="btn" id="navH" onclick="setView('hassan')">発散</button><button class="btn" id="navT" onclick="setView('tier')">検討UC</button><button class="btn" id="navP" onclick="setView('poc')">PoC設計</button><button class="btn" id="navC" onclick="setView('cmt')">コメント一覧</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
+ <button class="btn" id="navB" onclick="setView('board')" style="background:#1D6FE0;color:#fff;border:none">ロードマップ</button><button class="btn" id="navM" onclick="setView('map')">2軸マッピング</button><button class="btn" id="navS" onclick="setView('summary')">サマリー</button><button class="btn" id="navH" onclick="setView('hassan')">発散</button><button class="btn" id="navT" onclick="setView('tier')">検討UC</button><button class="btn" id="navP" onclick="setView('poc')">PoC設計</button><button class="btn" id="navC" onclick="setView('cmt')">コメント一覧</button><button class="btn" id="navK" onclick="setView('kai')" style="border-color:#0F6E56;color:#0F6E56;font-weight:700">開拓台帳</button><button class="btn btnp" onclick="addNew()">＋ UC追加</button>
  <button class="btn" onclick="openIO('export')" style="background:#0F6E56;color:#fff;border:none;font-weight:700">書き出し</button><span style="font-size:11px;color:#0F6E56;font-weight:700;line-height:1.25;max-width:200px">←UC評価後に押して、ダウンロードしたファイルをJDSCへご提出ください</span>
  <button class="btn" onclick="openIO('import')">取り込み</button>
  <button class="btn btnr" onclick="openSummaryReset()">サマリ初期化🔒</button>
@@ -99,6 +99,7 @@ v7.9で、入手区分是正前の旧ラベル下で付いた③（条件付き8
 <div id="pgTier" style="display:none"></div>
 <div id="pgPoc" style="display:none"></div>
 <div id="pgCmt" style="display:none"></div>
+<div id="pgKai" style="display:none"></div>
 <div id="pgMap" style="display:none">
  <div class="row" style="align-items:flex-end">
   <div><div class="lbl" style="margin:0">横軸（X）</div><select id="mx" onchange="mPresetOff();renderMap()"></select></div>
@@ -468,7 +469,7 @@ function doSummaryReset(){
  if(k!==ADMIN_KEY){m.style.color="#B03535";m.textContent="管理キーが一致しません。初期化は実行されていません。";return}
  try{
   // バックアップを自動ダウンロード
-  const j=JSON.stringify({ucs,votes2:soc.votes2,comments:soc.comments,stickies:soc.stickies||{},ivotes:soc.ivotes||{},svotes:soc.svotes||{},islands:soc.islands||{},actions:soc.actions||{},poc:soc.poc||{},cm2stk:soc.cm2stk||{},tier:soc.tier||{},by:normName(me())||"管理者",evaluatorId:myId(),exportedAt:new Date().toISOString(),backup:"summary-reset"},null,1);
+  const j=JSON.stringify({ucs,votes2:soc.votes2,comments:soc.comments,stickies:soc.stickies||{},ivotes:soc.ivotes||{},svotes:soc.svotes||{},islands:soc.islands||{},actions:soc.actions||{},poc:soc.poc||{},deciders:soc.deciders||{},cm2stk:soc.cm2stk||{},tier:soc.tier||{},by:normName(me())||"管理者",evaluatorId:myId(),exportedAt:new Date().toISOString(),backup:"summary-reset"},null,1);
   const blob=new Blob([j],{type:"application/json"});
   const el=document.createElement("a");el.href=URL.createObjectURL(blob);
   el.download="ucb_backup_"+new Date().toISOString().slice(0,10)+".json";el.click();
@@ -484,7 +485,7 @@ function resetAll(){if(!confirm("【UC初期化】UC本体（73件の記述）�
 function openIO(mode){
  const d=document.getElementById("io"),b=document.getElementById("ioBody");
  if(mode==="export"){
-  const j=JSON.stringify({ucs,votes2:soc.votes2,comments:soc.comments,stickies:soc.stickies||{},ivotes:soc.ivotes||{},svotes:soc.svotes||{},islands:soc.islands||{},actions:soc.actions||{},poc:soc.poc||{},by:normName(me())||"匿名",evaluatorId:myId(),exportedAt:new Date().toISOString()},null,1);
+  const j=JSON.stringify({ucs,votes2:soc.votes2,comments:soc.comments,stickies:soc.stickies||{},ivotes:soc.ivotes||{},svotes:soc.svotes||{},islands:soc.islands||{},actions:soc.actions||{},poc:soc.poc||{},deciders:soc.deciders||{},by:normName(me())||"匿名",evaluatorId:myId(),exportedAt:new Date().toISOString()},null,1);
   b.innerHTML='<b>書き出し（評価のご提出）</b><div class="note" style="color:#0F6E56;font-weight:700">「ダウンロード」で保存したファイル（JSON）を、そのままJDSC担当者へメール等でご提出ください。★評価・コメント・パートナー記入がすべて含まれます。</div><textarea rows="10" style="width:100%" id="exJ" readonly></textarea><div class="row" style="margin-top:6px"><button class="btn btnp" onclick="dl()">ダウンロード</button><button class="btn" onclick="io.close()">閉じる</button></div>';
   d.showModal();document.getElementById("exJ").value=j;
  }else{
@@ -554,6 +555,7 @@ function doImport(replace){
   for(const aid in (p.actions||{})){const _n=p.actions[aid],_c=soc.actions[aid];if(!_c||((_n.up||_n.at||"")>(_c.up||_c.at||"")))soc.actions[aid]=_n}
   soc.poc=soc.poc||{};
   for(const pid in (p.poc||{})){const _n=p.poc[pid],_c=soc.poc[pid];if(!_c||((_n.up||"")>(_c.up||"")))soc.poc[pid]=_n}
+  soc.deciders={...(soc.deciders||{}),...(p.deciders||{})};
   soc.cm2stk={...(p.cm2stk||{}),...(soc.cm2stk||{})};
   soc.tier=soc.tier||{};
   for(const tid in (p.tier||{})){const _n=p.tier[tid],_c=soc.tier[tid];if(!_c||((_n.up||"")>(_c.up||"")))soc.tier[tid]=_n}
@@ -935,7 +937,7 @@ const hML=(m)=>((HMODEL[hph]||HMODEL.P0)[m]||["",""]);
 const HCOL=[["#FFF6C9","#D9C24A","#5c4d00"],["#E6F1FB","#85B7EB","#0C447C"],["#FBEAF0","#ED93B1","#72243E"],["#EAF3DE","#97C459","#27500A"],["#EEEDFE","#AFA9EC","#3C3489"],["#FAECE7","#F0997B","#712B13"],["#E1F5EE","#5DCAA5","#085041"],["#FAEEDA","#FAC775","#633806"]];
 let hph=localStorage.getItem("ucb-hph")||"P0", hmode="add", hq="", hActAll=false;
 let hDraft={txt:"",uc:"",tag:""}, hEditId=null, hMoveId=null;
-const HVMAX=5;
+const HVMAX=10;
 const hNow=()=>new Date().toISOString();
 function hInit(){soc.stickies=soc.stickies||{};soc.ivotes=soc.ivotes||{};soc.svotes=soc.svotes||{};soc.islands=soc.islands||{};soc.actions=soc.actions||{}}
 function hSaveQ(){localStorage.setItem("ucb-social",JSON.stringify(soc))}
@@ -1022,81 +1024,129 @@ function hPromoteStk(sid){
  s.act=id;s.up=hNow();saveS();renderHassan();hMsg("付箋をアクションに昇格しました",true);
 }
 const HDSP=["未処理","反映","UC反映","見送り"];
-const HDSPC={"アクション化":["#E1F5EE","#0F6E56"],"反映":["#EAF3DE","#27500A"],"UC反映":["#E6F1FB","#0C447C"],"次Stepへ引継":["#EEEDFE","#3C3489"],"見送り":["#F1EFE8","#5F5E5A"]};
+const HDSPC={"アクション化":["#E1F5EE","#0F6E56"],"反映":["#EAF3DE","#27500A"],"UC反映":["#E6F1FB","#0C447C"],"次Stepへ引継":["#EEEDFE","#3C3489"],"保留":["#FFF6C9","#7A5A00"],"見送り":["#F1EFE8","#5F5E5A"]};
+const HKINDS=["記述修正","確認・調査","設計課題","仕様変更"];
 const hEff=s=>(s.dsp&&s.dsp.st&&s.dsp.st!=="未処理")?s.dsp.st:((s.act&&soc.actions[s.act])?"アクション化":"未処理");
-function hDsp(id,st){
- const s=soc.stickies[id];if(!s)return;
- s.dsp={...(s.dsp||{}),st};s.up=hNow();
- saveS();renderHassan();
- if(st!=="未処理")hMsg("取り扱いを「"+st+"」に設定しました。必要なら付箋のメモ欄に理由・反映先を記入してください",true);
+const hDate=()=>new Date().toISOString().slice(0,10);
+const hNoteAdd=(s,line)=>{s.dsp={...(s.dsp||{}),st:(s.dsp||{}).st||"未処理"};s.dsp.note=((s.dsp.note||"")?(s.dsp.note+"／"):"")+line};
+// 三択：やる（種別）／後で（Step・保留）／やらない
+function hDecide(id,v){
+ hInit();const s=soc.stickies[id];if(!s||!v)return;
+ if(v==="__reset"){s.dsp={...(s.dsp||{}),st:"未処理"};if(s.act&&soc.actions[s.act]&&!soc.actions[s.act].done){/* アクションは残す（台帳で削除） */}s.act=null;s.up=hNow();saveS();renderHassan();return}
+ if(v.startsWith("do:")){const kind=v.slice(3);
+  if(kind==="済"){s.dsp={...(s.dsp||{}),st:s.uc?"UC反映":"反映"};hNoteAdd(s,"その場で対応 "+hDate()+"（"+(normName(me())||"—")+"）");s.up=hNow();saveS();renderHassan();hMsg("その場で対応済みとして閉じました。メモに反映先を追記してください",true);return}
+  hMakeAction({ph:s.ph,title:(s.uc?s.uc+"　":"")+s.text.slice(0,50),kind,ucs:s.uc?[s.uc]:[],src:"島「"+s.tag+"」の付箋",items:[[id,s.text]]});
+  hMsg("アクション（"+kind+"）を作成しました。下部の台帳で担当・期限を入れてください",true);return}
+ if(v.startsWith("later:")){const to=v.slice(6);
+  if(to==="hold"){s.act=null;s.dsp={...(s.dsp||{}),st:"保留"};hNoteAdd(s,"保留 "+hDate());s.up=hNow();saveS();renderHassan();hMsg("保留（パーキングロット）に入れました。次の段階の冒頭で棚卸しします",true);return}
+  hCarryTo(id,to);return}
+ if(v==="no"){s.act=null;s.dsp={...(s.dsp||{}),st:"見送り"};s.up=hNow();saveS();renderHassan();
+  const el=document.querySelector('[data-hnote="'+id+'"]');if(el&&!(s.dsp.note||"").trim()){el.focus();el.placeholder="やらない理由を一行（必須）"}
+  hMsg("見送りにしました。理由をメモ欄に一行入れてください",true);return}
 }
+function hMakeAction(o){
+ hInit();const id="A-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ soc.actions[id]={ph:o.ph,title:o.title,kind:o.kind||"",owner:normName(me())||"未定",due:"",ucs:o.ucs||[],src:o.src||"",items:(o.items||[]).map(([sid,t])=>({sid,text:t,done:false})),done:false,at:hNow()};
+ for(const [sid] of (o.items||[])){const s=soc.stickies[sid];if(s){s.act=id;s.dsp={...(s.dsp||{}),st:"アクション化"};s.up=hNow()}}
+ saveS();renderHassan();return id}
 function hDspNote(id,v){const s=soc.stickies[id];if(!s)return;s.dsp={...(s.dsp||{}),st:(s.dsp||{}).st||"未処理",note:v};s.up=hNow();hSaveQ()}
-function hCarry(id){
+function hCarryTo(id,toPh){
  const s=soc.stickies[id];if(!s)return;
- const i=HPHASES.findIndex(p=>p.id===s.ph);
- if(i<0||i>=HPHASES.length-1){hMsg("次の段階がありません");return}
- const nx=HPHASES[i+1];
+ const nx=HPHASES.find(p=>p.id===toPh);if(!nx){hMsg("持ち越し先がありません");return}
  const nid="S-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  soc.stickies[nid]={ph:nx.id,tag:s.tag,text:s.text,uc:s.uc||"",name:s.name,at:hNow(),from:s.ph};
- s.dsp={...(s.dsp||{}),st:"次Stepへ引継"};s.up=hNow();
- saveS();renderHassan();
- hMsg("「"+nx.n+"」へ引き継ぎました（元の付箋には引継マークが付きます）",true);
-}
+ s.act=null;s.dsp={...(s.dsp||{}),st:"次Stepへ引継"};hNoteAdd(s,"→"+nx.n.split(" ")[0]+" "+hDate());s.up=hNow();
+ saveS();renderHassan();hMsg("「"+nx.n+"」へ持ち越しました（元の付箋には引継マーク）",true)}
+function hCarry(id){const s=soc.stickies[id];if(!s)return;const i=HPHASES.findIndex(p=>p.id===s.ph);if(i<0||i>=HPHASES.length-1){hMsg("次の段階がありません");return}hCarryTo(id,HPHASES[i+1].id)}
+// 保留の棚卸し：拾う（この段階へコピー）／やらない
+function hHoldPick(id){const s=soc.stickies[id];if(!s)return;
+ const nid="S-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ soc.stickies[nid]={ph:hph,tag:s.tag,text:s.text,uc:s.uc||"",name:s.name,at:hNow(),from:s.ph};
+ s.dsp={...(s.dsp||{}),st:"次Stepへ引継"};hNoteAdd(s,"棚卸しで拾う→"+hPh().n.split(" ")[0]+" "+hDate());s.up=hNow();saveS();renderHassan();hMsg("保留から拾い、この段階の未処理に戻しました",true)}
+function hHoldDrop(id){const s=soc.stickies[id];if(!s)return;s.dsp={...(s.dsp||{}),st:"見送り"};hNoteAdd(s,"棚卸しで見送り "+hDate());s.up=hNow();saveS();renderHassan()}
+function hHoldZero(){hInit();const ss=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&hEff(s)==="未処理"&&hStkTally(id)===0);
+ if(!ss.length){hMsg("票0の未処理付箋はありません");return}
+ const voted=Object.entries(soc.stickies).some(([id,s])=>s.ph===hph&&hStkTally(id)>0);
+ if(!voted){hMsg("この段階にはまだ投票がありません。②で投票を集めてから一括保留してください（全部が保留になるのを防ぐため）");return}
+ if(typeof confirm==="function"&&!confirm("票が0の未処理付箋 "+ss.length+"枚をまとめて「保留」にします。後で棚卸しで拾えます。よろしいですか？"))return;
+ for(const [id,s] of ss){s.dsp={...(s.dsp||{}),st:"保留"};hNoteAdd(s,"票0一括保留 "+hDate());s.up=hNow()}
+ saveS();renderHassan();hMsg(ss.length+"枚を保留にしました",true)}
+function hSetDecider(v){hInit();soc.deciders=soc.deciders||{};soc.deciders[hph]=v;hSaveQ()}
+// アクション完了→付箋へ結果を自動付与（閉ループ）
 function hActEdit(id,f,v){
- hInit();if(!soc.actions[id])return;
- soc.actions[id][f]=f==="done"?!!v:v;
- soc.actions[id].up=hNow();
- if(f==="done"){saveS();renderHassan()}else hSaveQ();
-}
-function hActDel(id){if(typeof confirm==="function"&&!confirm("このアクションを削除しますか？"))return;delete soc.actions[id];saveS();renderHassan()}
+ hInit();const a=soc.actions[id];if(!a)return;
+ a[f]=f==="done"?!!v:v;a.up=hNow();
+ if(f==="done"){
+  const linked=Object.entries(soc.stickies).filter(([sid,s])=>s.act===id);
+  for(const [sid,s] of linked){
+   if(a.done){s.dsp={...(s.dsp||{}),st:(a.kind==="記述修正"||s.uc)?"UC反映":"反映"};hNoteAdd(s,(a.kind||"対応")+"完了 "+hDate()+"（"+(a.owner||"—")+"）")}
+   else{s.dsp={...(s.dsp||{}),st:"アクション化"}}
+   s.up=hNow()}
+  saveS();renderHassan()}
+ else hSaveQ()}
+function hActItem(id,i,v){const a=soc.actions[id];if(!a||!a.items||!a.items[i])return;a.items[i].done=!!v;a.up=hNow();
+ if(a.items.every(x=>x.done)&&!a.done){hActEdit(id,"done",true);return}hSaveQ()}
+function hActKind(id,v){const a=soc.actions[id];if(!a)return;a.kind=v;a.up=hNow();hSaveQ()}
+function hActDel(id){if(typeof confirm==="function"&&!confirm("このアクションを削除しますか？（紐づく付箋は未処理に戻ります）"))return;
+ for(const sid in soc.stickies){const s=soc.stickies[sid];if(s.act===id){s.act=null;if(s.dsp&&s.dsp.st==="アクション化")s.dsp.st="未処理"}}
+ delete soc.actions[id];saveS();renderHassan()}
 function hActToggle(){hActAll=!hActAll;renderHassan()}
 function hTally(tag){let n=0;for(const [sid,s] of hStkOf(tag))n+=hStkTally(sid);return n}
-function hPromoteUc(uc){
- hInit();
- const stks=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&(s.uc||"")===uc);
- if(!stks.length){hMsg("このUCの付箋がありません");return}
+// 束（UC×島）単位のアクション化
+function hPromoteBundle(uc,tag,kind){
+ hInit();const stks=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&(s.uc||"")===uc&&s.tag===tag&&hEff(s)==="未処理");
+ if(!stks.length){hMsg("この束に未処理の付箋がありません");return}
  const u=byId(uc);
- const dup=Object.values(soc.actions).find(a=>a.ph===hph&&a.src==="UC "+uc&&!a.done);
- if(dup&&typeof confirm==="function"&&!confirm(uc+"には未完了のアクション「"+dup.title+"」が既にあります。もう1件作成しますか？"))return;
- const id="A-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
- soc.actions[id]={ph:hph,title:uc+"　"+((u&&u.n)||"")+"：論点"+stks.length+"件への対応",owner:normName(me())||"未定",due:"",ucs:[uc],src:"UC "+uc,done:false,at:hNow()};
- stks.forEach(([sid,s])=>{if(!s.act&&!(s.dsp&&s.dsp.st&&s.dsp.st!=="未処理")){s.act=id;s.up=hNow()}});
- saveS();renderHassan();
- hMsg(uc+"の論点をまとめて1件のアクションにしました。下部の台帳で担当・期限を記入してください",true);
-}
+ hMakeAction({ph:hph,title:(uc?uc+"　"+((u&&u.n)||"").slice(0,20)+"：":"")+tag+" "+stks.length+"件（"+kind+"）",kind,ucs:uc?[uc]:[],src:(uc?"UC "+uc+"×":"")+"島「"+tag+"」",items:stks.map(([id,s])=>[id,s.text])});
+ hMsg("束「"+(uc||"UC横断")+"×"+tag+"」を1件のアクションにしました（付箋本文はチェックリストとして台帳に入ります）",true)}
+function hPromoteUc(uc){
+ hInit();const stks=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&(s.uc||"")===uc&&hEff(s)==="未処理");
+ if(!stks.length){hMsg("このUCに未処理の付箋がありません");return}
+ const u=byId(uc);
+ hMakeAction({ph:hph,title:uc+"　"+((u&&u.n)||"")+"：未処理"+stks.length+"件の対応",kind:"確認・調査",ucs:[uc],src:"UC "+uc,items:stks.map(([id,s])=>[id,s.text])});
+ hMsg(uc+"の未処理付箋をまとめて1件のアクションにしました。台帳で種別・担当・期限を入れてください",true)}
+function hKindSel(onch,label){return '<select style="padding:3px 6px;font-size:12px" onchange="if(this.value){'+onch+';this.value=\'\'}"><option value="">'+esc(label||"この束をやる…")+'</option>'+HKINDS.map(k=>'<option value="'+esc(k)+'">やる：'+esc(k)+'</option>').join('')+'</select>'}
 function hUcCards(mk){
- const all=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph);
- if(!all.length)return '<div class="note">この段階の付箋がありません。①で付箋を出してください。</div>';
+ const all=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&hEff(s)!=="保留");
+ if(!all.length)return '<div class="note">この段階の付箋がありません（保留はページ下部のパーキングロットに表示）。①で付箋を出してください。</div>';
  const byU={};
  for(const e of all){const k=e[1].uc||"__none";(byU[k]=byU[k]||[]).push(e)}
  const gsum=k=>byU[k].reduce((x,e)=>x+hStkTally(e[0]),0);
  const keys=Object.keys(byU).filter(k=>k!=="__none")
   .sort((a,b)=>(gsum(b)-gsum(a))||(byU[b].length-byU[a].length)||(a<b?-1:1));
+ const bundles=(k,list,col)=>{ // UC×島 の束
+  const byT={};for(const e of list){(byT[e[1].tag]=byT[e[1].tag]||[]).push(e)}
+  const tsum=t=>byT[t].reduce((x,e)=>x+hStkTally(e[0]),0);
+  return Object.keys(byT).sort((a,b)=>(tsum(b)-tsum(a))||(byT[b].length-byT[a].length)).map(t=>{
+   const c=hTagCol(t),pend=byT[t].filter(e=>hEff(e[1])==="未処理").length,acts=Object.values(soc.actions).filter(a=>a.ph===hph&&a.src===((k==="__none"?"":"UC "+k+"×")+"島「"+t+"」")&&!a.done).length;
+   return '<div style="margin:8px 0 4px;padding:4px 8px;background:'+c[0]+';border-left:4px solid '+c[1]+';border-radius:5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +'<b style="font-size:12.5px;color:'+c[2]+'">束：'+esc(t)+'</b><span class="note">'+byT[t].length+'枚・計'+tsum(t)+'票'+(pend?'・<span style="color:#8F2727;font-weight:700">未処理'+pend+'</span>':'・処理済')+'</span>'
+    +'<span style="margin-left:auto"></span>'+(pend?hKindSel("hPromoteBundle('"+jsq(k==="__none"?"":k)+"','"+jsq(t)+"',this.value)"):'')+(acts?'<span class="note">アクション'+acts+'件</span>':'')+'</div>'
+    +byT[t].sort((a,b)=>(hStkTally(b[0])-hStkTally(a[0]))||(a[1].at<b[1].at?-1:1)).map(mk).join('')}).join('')};
  const card=(k)=>{
-  const u=byId(k),list=byU[k].sort((a,b)=>(hStkTally(b[0])-hStkTally(a[0]))||(a[1].at<b[1].at?-1:1));
+  const u=byId(k),list=byU[k];
   const pend=list.filter(e=>hEff(e[1])==="未処理").length;
   const acts=Object.entries(soc.actions).filter(([id,a])=>a.ph===hph&&(a.ucs||[]).includes(k));
   return '<div class="hisl" style="border-top:4px solid #1D6FE0">'
    +'<div class="row" style="align-items:center;gap:6px;flex-wrap:wrap">'
-   +'<b style="font-size:13px"><a href="javascript:void(0)" onclick="openPanel(\''+jsq(k)+'\')" style="color:#0C447C">'+esc(k)+'</a>\u3000'+esc(u?(u.n||""):"（ボードにないUC）")+'</b>'
+   +'<b style="font-size:13px"><a href="javascript:void(0)" onclick="openPanel(\''+jsq(k)+'\')" style="color:#0C447C">'+esc(k)+'</a>　'+esc(u?(u.n||""):"（ボードにないUC）")+'</b>'
    +'<span class="note">'+list.length+'枚・計'+gsum(k)+'票</span>'
    +'<span style="margin-left:auto">'+(pend
      ?'<span style="background:#FDECEC;color:#8F2727;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700">未処理 '+pend+'</span>'
      :'<span style="background:#E1F5EE;color:#0F6E56;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700">処理済</span>')+'</span></div>'
-   +'<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:5px 0">'
-   +'<button class="btn" style="background:#0F6E56;color:#fff;border:none" onclick="hPromoteUc(\''+jsq(k)+'\')">このUCの論点をアクション化</button>'
-   +(acts.length?'<span class="note">このUCのアクション：'+acts.length+'件（下部の台帳）</span>':'<span class="note">このUCの論点をまとめて1件のタスクにします（担当・期限はUC単位で管理）</span>')
-   +'</div>'
-   +list.map(mk).join('')+'</div>';
+   +'<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:2px 0">'
+   +(pend?'<button class="btn" style="padding:3px 10px;font-size:12px;background:#0F6E56;color:#fff;border:none" onclick="hPromoteUc(\''+jsq(k)+'\')">未処理を全部まとめてやる</button>':'')
+   +'<span class="note">'+(acts.length?'このUCのアクション：'+acts.length+'件（下部の台帳）':'原則は束（島）ごとに「この束をやる…」で種別を選ぶ。細かく分けたい付箋は個別に三択')+'</span></div>'
+   +bundles(k,list)+'</div>';
  };
  let out=keys.map(card).join('');
  if(byU.__none){
-  const list=byU.__none.sort((a,b)=>(hStkTally(b[0])-hStkTally(a[0]))||(a[1].at<b[1].at?-1:1));
+  const list=byU.__none;
   out+='<div class="hisl" style="border-top:4px solid #8B98A6">'
-   +'<div class="row" style="align-items:center;gap:6px;flex-wrap:wrap"><b style="font-size:13px">関連UC未設定</b>'
+   +'<div class="row" style="align-items:center;gap:6px;flex-wrap:wrap"><b style="font-size:13px">UC横断（関連UC未設定）</b>'
    +'<span class="note">'+list.length+'枚</span></div>'
-   +'<div class="note" style="margin:4px 0">UCに紐づく論点は、付箋の「編集」でUC番号を入れると上のUCカードに移り、UC単位でタスク化できます。UC横断の論点（ボードの仕様・進め方など）はUCに紐づかないため、ここでは各付箋の「→アクション」で個別にタスク化してください。</div>'
-   +list.map(mk).join('')+'</div>';
+   +'<div class="note" style="margin:2px 0">ボードの仕様・進め方など。UCに紐づく論点なら付箋の「編集」でUC番号を入れると上のUCカードに移ります。</div>'
+   +bundles("__none",list)+'</div>';
  }
  return out;
 }
@@ -1112,11 +1162,19 @@ function hActCsv(){
  hInit();
  const phn=Object.fromEntries(HPHASES.map(p=>[p.id,p.n]));
  const q=s=>'"'+String(s==null?"":s).replace(/"/g,'""')+'"';
- const rows=[["フェーズ","タイトル","担当","期限","関連UC","出典","状態"].map(q).join(",")];
- for(const [id,a] of hActList())rows.push([phn[a.ph]||a.ph,a.title,a.owner,a.due,(a.ucs||[]).join(" "),a.src||"",a.done?"完了":"未完了"].map(q).join(","));
+ const rows=[["フェーズ","タイトル","種別","担当","期限","関連UC","出所","状態","チェックリスト"].map(q).join(",")];
+ for(const [id,a] of hActList())rows.push([phn[a.ph]||a.ph,a.title,a.kind||"",a.owner,a.due,(a.ucs||[]).join(" "),a.src||"",a.done?"完了":"未完了",(a.items||[]).map(x=>(x.done?"☑":"☐")+x.text).join(" / ")].map(q).join(","));
  const blob=new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv"});
  const el=document.createElement("a");el.href=URL.createObjectURL(blob);el.download="next_actions.csv";el.click();URL.revokeObjectURL(el.href);
 }
+// 段階の完了判定：未処理0 ＋ 「やる」の完了率
+function hPhaseGate(){
+ const ss=Object.values(soc.stickies).filter(s=>s.ph===hph);const pend=ss.filter(s=>hEff(s)==="未処理").length;
+ const acts=Object.values(soc.actions).filter(a=>a.ph===hph);const done=acts.filter(a=>a.done).length;
+ const rate=acts.length?Math.round(done/acts.length*100):100;
+ const crit=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&s.tag==="致命的欠陥"&&s.act&&soc.actions[s.act]&&!soc.actions[s.act].done).length;
+ const ok=pend===0&&rate>=80&&crit===0;
+ return {pend,acts:acts.length,done,rate,crit,ok}}
 function hQ(v){hq=v;renderHUc()}
 function hPick(id){hDraft.uc=id;const el=document.getElementById("hUc");if(el)el.value=id;renderHUc(id)}
 function renderHUc(previewId){
@@ -1183,7 +1241,17 @@ function renderHassan(){
   form='<div class="note" style="margin:8px 0">持ち票は1人'+HVMAX+'票（このフェーズ内）。重要と思う課題（付箋）の「＋」を押して投票してください。同じ課題に複数票も可。票の多い課題・島から順に表示されます。あなたの使用済み：<b>'+hMyVotes()+' / '+HVMAX+'</b></div>';
  }
  if(hmode==="act"){
-  form='<div style="margin:8px 0;background:#F6FBF8;border:1px solid #BFE3D2;border-radius:8px;padding:8px 11px;font-size:12.5px;line-height:1.7"><b>'+esc(hML("act")[0])+'の手順</b><br>この工程では、付箋が<b>島（論点の種類）ではなくUC単位</b>にまとめ直されます。対応も担当もUCごとに決まるためです。<br>1. 票の多いUCから順に見る<br>2. <b>「このUCの論点をアクション化」</b>を押す（アクションは<b>UC単位</b>＝1UC1タスクが原則。担当・期限をUCごとに置けるようにするため）<br>3. タスク化しない付箋も<b>取り扱い</b>のプルダウンとメモを必ず設定（反映／UC反映／見送り。次の段階で扱うものは「→次Stepへ」）<br>4. 下部の<b>ネクストアクション一覧</b>で担当・期限を記入し、対応が済んだらチェックで完了<br>5. 上部の集計で<b>未処理が0枚</b>になったらこの段階は完了</div>';
+  const gt=hPhaseGate();const dec=((soc.deciders||{})[hph]||"");
+  form='<div style="margin:8px 0;background:#F6FBF8;border:1px solid #BFE3D2;border-radius:8px;padding:8px 11px;font-size:12.5px;line-height:1.7"><b>'+esc(hML("act")[0])+'の手順（ファシリテーター1人が操作・30分目安）</b>'
+   +'<div class="row" style="gap:8px;align-items:center;margin:4px 0"><span>デサイダー（最終判断者）：</span><input value="'+esc(dec)+'" placeholder="この段階の最終判断者" onchange="hSetDecider(this.value)" style="width:140px;padding:3px 7px">'
+   +'<button class="btn" style="padding:3px 10px;font-size:12px" onclick="hHoldZero()">票0の未処理を一括保留</button></div>'
+   +'0. デサイダーを決める → <b>票0を一括保留</b>で視界から外す（後で棚卸しで拾える）<br>'
+   +'1. 票の多いUCから順に開く。決める単位は<b>束（UC×島）</b>。束の「この束をやる…」で種別を選ぶと、付箋本文をチェックリストに持つ1件のアクションになる<br>'
+   +'2. 束で扱いが分かれる付箋だけ、付箋の<b>三択</b>で個別に決める：<b>やる</b>（種別＝記述修正／確認・調査／設計課題／仕様変更、または「その場で対応済み」）／<b>後で</b>（持ち越し先のStep、または保留）／<b>やらない</b>（理由を一行）<br>'
+   +'3. 票2以上は議論して決める。票1はデサイダーが即決。意見が割れたら投票結果を参考にデサイダーが決める<br>'
+   +'4. 「反映」「UC反映」は選ばない。<b>台帳でアクションを完了チェックすると紐づく付箋に自動で付く</b>（閉ループ）<br>'
+   +'5. <b>段階の完了＝未処理0枚 かつ アクション完了率80%以上</b>（致命的欠陥に紐づくものは100%）。'
+   +'<span style="display:inline-block;margin-left:6px;padding:2px 10px;border-radius:10px;font-weight:700;background:'+(gt.ok?'#E1F5EE':'#FDECEC')+';color:'+(gt.ok?'#0F6E56':'#8F2727')+'">'+(gt.ok?'✔ この段階は完了条件を満たしています':'未処理'+gt.pend+'枚／アクション完了 '+gt.done+'/'+gt.acts+'（'+gt.rate+'%）'+(gt.crit?'／致命的欠陥の未完了'+gt.crit:''))+'</span></div>';
  }
  const ucref=hmode==="add"?('<div style="background:#F4F8FD;border:1px solid #C9DEF5;border-radius:10px;padding:9px 11px;margin:8px 0">'
   +'<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:13px;color:#0C447C">UCを確認しながら書く</b>'
@@ -1222,12 +1290,8 @@ function renderHassan(){
    +' <a href="javascript:void(0)" onclick="hEditStk(\''+jsq(id)+'\')" style="font-size:11px;color:inherit">編集</a>'
    +' <a href="javascript:void(0)" onclick="hMove(\''+jsq(id)+'\')" style="font-size:11px;color:inherit">移動</a>'
    +' <a href="javascript:void(0)" onclick="hDel(\''+jsq(id)+'\')" style="font-size:11px;color:#B03535">削除</a>'
-   +(hmode==="act"&&!s.uc&&!(s.act&&soc.actions[s.act])?' <a href="javascript:void(0)" onclick="hPromoteStk(\''+jsq(id)+'\')" style="font-size:11px;color:#0F6E56;font-weight:700">→アクション</a>':'')
-   +(hmode==="act"?' <a href="javascript:void(0)" onclick="hCarry(\''+jsq(id)+'\')" style="font-size:11px;color:#3C3489;font-weight:700">→次Stepへ</a>':'')
    +'</div>'
-   +(hmode==="act"?('<div class="row" style="gap:5px;align-items:center;margin-top:5px;flex-wrap:wrap"><span style="font-size:11.5px;color:'+col[2]+'">取り扱い：</span>'
-    +'<select style="padding:3px 7px;font-size:12.5px" onchange="hDsp(\''+jsq(id)+'\',this.value)">'+HDSP.map(x=>'<option'+(x===(((s.dsp||{}).st&&(s.dsp||{}).st!=="アクション化"&&(s.dsp||{}).st!=="次Stepへ引継")?(s.dsp||{}).st:"未処理")?' selected':'')+'>'+x+'</option>').join('')+'</select>'
-    +'<input value="'+esc((s.dsp||{}).note||"")+'" placeholder="反映先・理由（例：投票を課題単位に仕様変更／U09の記載修正）" style="flex:1;min-width:150px;padding:3px 7px;font-size:12.5px" onchange="hDspNote(\''+jsq(id)+'\',this.value)"></div>'):'')
+   +(hmode==="act"?(function(){const e2=hEff(s);const later=HPHASES.filter((p,i)=>i>HPHASES.findIndex(x=>x.id===s.ph));const opts='<option value="">'+(e2==="未処理"?"決める…":"決定済："+e2+"（変更…）")+'</option>'+'<optgroup label="やる">'+HKINDS.map(k=>'<option value="do:'+k+'">やる：'+k+'</option>').join('')+'<option value="do:済">やる：その場で対応済み</option></optgroup>'+'<optgroup label="後で">'+later.map(p=>'<option value="later:'+p.id+'">後で：'+esc(p.n.split(" ")[0])+'へ</option>').join('')+'<option value="later:hold">後で：保留（パーキングロット）</option></optgroup>'+'<optgroup label="やらない"><option value="no">やらない（理由を一行）</option></optgroup>'+(e2!=="未処理"?'<option value="__reset">未処理に戻す</option>':'');return '<div class="row" style="gap:5px;align-items:center;margin-top:5px;flex-wrap:wrap"><select style="padding:3px 7px;font-size:12.5px;'+(e2==="未処理"?'border:2px solid #E5A0A0':'')+'" onchange="hDecide(\''+jsq(id)+'\',this.value)">'+opts+'</select>'+'<input data-hnote="'+esc(id)+'" value="'+esc((s.dsp||{}).note||"")+'" placeholder="'+(e2==="見送り"?'やらない理由を一行（必須）':'メモ：反映先・理由')+'" style="flex:1;min-width:150px;padding:3px 7px;font-size:12.5px" onchange="hDspNote(\''+jsq(id)+'\',this.value)"></div>'})():'')
    +'</div>';
  };
  const isl=(hmode==="act")?hUcCards(mk):tags.map(t=>{
@@ -1268,39 +1332,48 @@ function renderHassan(){
    +'<input type="checkbox" '+(a.done?'checked':'')+' onchange="hActEdit(\''+jsq(id)+'\',\'done\',this.checked)">'
    +(hActAll?'<span class="note" style="white-space:nowrap">'+esc((phn[a.ph]||a.ph).split(" ")[0])+'</span>':'')
    +'<input value="'+esc(a.title)+'" onchange="hActEdit(\''+jsq(id)+'\',\'title\',this.value)" style="flex:2;min-width:180px">'
+   +'<select onchange="hActKind(\''+jsq(id)+'\',this.value)" style="padding:3px 5px;font-size:12px"><option value=""'+(!a.kind?' selected':'')+'>種別…</option>'+HKINDS.map(k=>'<option'+(a.kind===k?' selected':'')+'>'+k+'</option>').join('')+'</select>'
    +(a.src?'<span class="note" style="white-space:nowrap" title="このアクションの出所">出所：'+esc(a.src)+'</span>':'')
    +'<span class="note">担当</span><input value="'+esc(a.owner)+'" onchange="hActEdit(\''+jsq(id)+'\',\'owner\',this.value)" style="width:90px">'
    +'<span class="note">期限</span><input type="date" value="'+esc(a.due)+'" onchange="hActEdit(\''+jsq(id)+'\',\'due\',this.value)" style="width:130px">'
    +(a.ucs&&a.ucs.length?'<span class="note">関連：'+a.ucs.map(u=>'<a href="javascript:void(0)" onclick="openPanel(\''+jsq(u)+'\')">'+esc(u)+'</a>').join(' ')+'</span>':'')
-   +'<a href="javascript:void(0)" onclick="hActDel(\''+jsq(id)+'\')" style="font-size:11px;color:#B03535">削除</a></div>').join('');
+   +'<a href="javascript:void(0)" onclick="hActDel(\''+jsq(id)+'\')" style="font-size:11px;color:#B03535">削除</a>'
+   +((a.items&&a.items.length)?'<div style="flex-basis:100%;font-size:12px;line-height:1.6;padding-left:22px">'+a.items.map((it,i)=>'<label style="display:block;cursor:pointer;'+(it.done?'opacity:.5;text-decoration:line-through':'')+'"><input type="checkbox" '+(it.done?'checked':'')+' onchange="hActItem(\''+jsq(id)+'\','+i+',this.checked)"> '+esc(it.text)+'</label>').join('')+'</div>':'')+'</div>').join('');
   actsBlock='<div style="margin-top:12px"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">'
    +'<b style="font-size:13.5px">ネクストアクション（検討課題の対応台帳）</b>'
    +'<span class="note">完了 '+nDone+' / '+nAll+'（期限順・完了は下）</span>'
    +'<span style="margin-left:auto"></span>'
    +'<button class="btn" style="padding:3px 10px" onclick="hActToggle()">'+(hActAll?'このフェーズのみ表示':'全フェーズを表示')+'</button>'
    +'<button class="btn" style="padding:3px 10px" onclick="hActCsv()">CSV書き出し</button></div>'
-   +'<div class="note" style="margin:3px 0 6px">付箋から昇格した検討課題はここで管理します。担当・期限を入れ、対応したらチェックで完了。出所ラベルでどの島・付箋から来たか辿れます。</div>'+(acts||'<div class="note">まだアクションはありません。②で票を集め、③で昇格させてください。</div>')+'</div>';
+   +'<div class="note" style="margin:3px 0 6px">束・付箋から作った検討課題の台帳。担当・期限・種別を入れ、チェックリストを全部消すか完了チェックを入れると、<b>紐づく付箋に「反映／UC反映」が自動で付きます</b>（アクション削除で付箋は未処理に戻る）。</div>'+(acts||'<div class="note">まだアクションはありません。②で票を集め、③で束ごとに「やる」を選んでください。</div>')+'</div>';
+  const holds=Object.entries(soc.stickies).filter(([id,s])=>hEff(s)==="保留").sort((a,b)=>(a[1].ph<b[1].ph?-1:1));
+  if(holds.length){const phn2=Object.fromEntries(HPHASES.map(p=>[p.id,p.n.split(" ")[0]]));
+   actsBlock+='<details style="margin-top:12px;background:#FFFBEA;border:1px solid #E3C96B;border-radius:9px;padding:8px 11px"'+(window._hHoldOpen?' open':'')+' ontoggle="window._hHoldOpen=this.open"><summary style="cursor:pointer"><b style="font-size:13.5px;color:#7A5A00">パーキングロット（保留 '+holds.length+'枚）</b><span class="note" style="margin-left:8px">段階の冒頭に5分だけ棚卸し：この段階で扱うなら「拾う」、扱わないなら「やらない」。触らなければ保留のまま残ります。クリックで開閉</span></summary>'
+    +holds.map(([id,s])=>'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 0;border-top:1px dashed #E3C96B;font-size:12.5px"><span class="note" style="white-space:nowrap">'+esc(phn2[s.ph]||s.ph)+'</span>'+(s.uc?'<b style="color:#0C447C">'+esc(s.uc)+'</b>':'')+'<span>'+esc(s.text)+'</span><span class="note">'+esc(s.tag)+'</span><span style="margin-left:auto"></span>'
+    +'<button class="btn" style="padding:2px 9px;font-size:12px;background:#1D6FE0;color:#fff;border:none" onclick="hHoldPick(\''+jsq(id)+'\')">拾う</button><button class="btn" style="padding:2px 9px;font-size:12px" onclick="hHoldDrop(\''+jsq(id)+'\')">やらない</button></div>').join('')+'</details>'}
  }
  el.innerHTML='<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0">'
   +'<span class="note">フェーズ：</span>'+phBtns+'<span style="margin-left:auto"></span>'+modes+'</div>'
   +'<div style="background:'+HPC[hph][0]+';border:1px solid '+HPC[hph][1]+';color:'+HPC[hph][2]+';border-radius:8px;padding:7px 11px;margin:6px 0;font-size:12.5px;line-height:1.5;font-weight:700">この段階の目的｜'+esc(hPh().g||"")+'</div>'
   +'<div style="background:'+HPC[hph][0]+';border:2px solid '+HPC[hph][1]+';border-radius:8px;padding:7px 11px;margin:6px 0;font-size:13px;line-height:1.6"><b>いま：'+esc(hPh().n)+'　'+esc(hML(hmode)[0])+'</b><br><span style="font-size:12.5px">'+esc(hML(hmode)[1])+'</span></div>'
   +'<div style="background:#fff;border:1px dashed '+HPC[hph][1]+';border-radius:8px;padding:8px 11px;margin:6px 0;font-size:12.5px;line-height:1.7"><b>'+esc(hPh().n)+'の進め方</b><br>'
-  +'<b>'+esc(hML("add")[0])+'</b>（1枚1論点・関連UCを付ける）　→　<b>'+esc(hML("vote")[0])+'</b>（1人'+HVMAX+'票）　→　<b>'+esc(hML("act")[0])+'</b>：付箋1枚ずつ<b>出口（取り扱い）</b>を決める<br>'
-  +'出口は5つ：<b>→アクション</b>＝<b>UC単位</b>でタスク化し、下部「ネクストアクション」一覧で担当・期限を付けて追跡／<b>反映</b>＝ボードの仕様・進め方に反映済み（メモに内容）／<b>UC反映</b>＝該当UCの記述を修正済み（メモに反映先）／<b>→次Stepへ</b>＝次の段階へ引き継ぎ／<b>見送り</b>＝メモに理由。<b>未処理0枚＝この段階の完了</b>です。<br>'
-  +'<span style="color:#3C3489"><b>段階どうしの関係</b>：付箋はフェーズ0〜Step3の段階ごとに独立したレーンで、自動では引き継がれません。前の段階の論点をこの段階で扱うには、前の段階の③で「→次Stepへ」を押して持ち越します（持ち越し先の付箋に「⇦◯◯より」、元の付箋に「次Stepへ引継」マークが付きます）。</span></div>'
+  +'<b>'+esc(hML("add")[0])+'</b>（1枚1論点・関連UCを付ける）　→　<b>'+esc(hML("vote")[0])+'</b>（1人'+HVMAX+'票＝議論の順番と重みを決める道具）　→　<b>'+esc(hML("act")[0])+'</b>：<b>束（UC×島）</b>ごとに三択で決める<br>'
+  +'三択：<b>やる</b>＝種別（記述修正／確認・調査／設計課題／仕様変更）を選び、担当・期限付きのアクションにする（軽いものは「その場で対応済み」で即閉じ）／<b>後で</b>＝持ち越し先のStepを選ぶ、または保留（パーキングロット）／<b>やらない</b>＝理由を一行。'
+  +'「反映」「UC反映」は選ぶものではなく、<b>アクションを完了すると付箋に自動で付く結果</b>です。<b>段階の完了＝未処理0枚＋アクション完了率80%以上</b>。<br>'
+  +'<span style="color:#3C3489"><b>段階どうしの関係</b>：付箋は段階ごとに独立したレーンで自動では引き継がれません。「後で：◯◯へ」で任意の段階に持ち越せます（持ち越し先に「⇦◯◯より」、元に「次Stepへ引継」）。保留は段階をまたいで残り、次の段階の冒頭で棚卸しします。</span></div>'
   +(function(){const pi=HPHASES.findIndex(p=>p.id===hph);if(pi<=0)return"";
    const pv=HPHASES[pi-1];
    const carried=Object.values(soc.stickies).filter(s=>s.ph===hph&&s.from).length;
    const pend=Object.values(soc.stickies).filter(s=>s.ph===pv.id&&hEff(s)==="未処理").length;
-   return '<div class="note" style="margin:2px 0 6px;padding:5px 10px;background:'+(pend?'#FDF3F3':'#F2F7F2')+';border-radius:8px">前の段階（'+esc(pv.n)+'）からの引継ぎ付箋：<b>'+carried+'枚</b>。'
+   const holdN=Object.values(soc.stickies).filter(s=>hEff(s)==="保留").length;
+   return '<div class="note" style="margin:2px 0 6px;padding:5px 10px;background:'+(pend?'#FDF3F3':'#F2F7F2')+';border-radius:8px">前の段階（'+esc(pv.n)+'）からの引継ぎ付箋：<b>'+carried+'枚</b>'+(holdN?'／<b style="color:#7A5A00">保留の棚卸し待ち '+holdN+'枚</b>（③の下部パーキングロット）':'')+'。'
     +(pend?'<span style="color:#8F2727;font-weight:700">'+esc(pv.n)+'には未処理の付箋が'+pend+'枚残っています。</span><a href="javascript:void(0)" onclick="hSetPhase(\''+pv.id+'\')" style="font-weight:700">→ '+esc(pv.n)+'を開いて取り扱いを決める</a>（この段階に関係する論点は「→次Stepへ」で持ち越せます）'
     :'前の段階の付箋はすべて取り扱い済みです。')+'</div>'})()
   +(function(){const ss=Object.values(soc.stickies).filter(s=>s.ph===hph);if(!ss.length)return"";
    const c={};ss.forEach(s=>{const e2=hEff(s);c[e2]=(c[e2]||0)+1});
    const chip=(k)=>c[k]?'<span style="background:'+HDSPC[k][0]+';color:'+HDSPC[k][1]+';border-radius:10px;padding:2px 10px;font-size:12.5px;font-weight:700;margin-right:5px">'+k+' '+c[k]+'</span>':'';
    return '<div class="note" style="margin:2px 0 6px">この段階の付箋 <b>'+ss.length+'枚</b>の取り扱い：'
-    +chip("アクション化")+chip("反映")+chip("UC反映")+chip("次Stepへ引継")+chip("見送り")
+    +chip("アクション化")+chip("反映")+chip("UC反映")+chip("次Stepへ引継")+chip("保留")+chip("見送り")
     +'<span style="background:#FDECEC;color:#8F2727;border-radius:10px;padding:2px 10px;font-size:12.5px;font-weight:700">未処理 '+(c["未処理"]||0)+'</span>'
     +'　（取り扱いは③アクション化モードで設定）</div>'})()
   +'<div id="hMsg" style="display:none;border:1px solid;border-radius:8px;padding:6px 10px;margin:6px 0;font-size:12.5px"></div>'
@@ -1534,5 +1607,248 @@ function renderTier(){
 
 // UC詳細（全画面）をEscで閉じる
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&(sel||editing)&&view==="board"){sel=null;editing=null;renderAll()}});
+
+
+// ======== 開拓台帳（UC × パートナー） v7 ========
+// データは ucb-partners（別キー）に保存。既存の書き出し/取り込み（ucb-data / ucb-social）には一切含めない。
+const KST=["未接触","リスト化","ルート確認中","初回接触","NDA/守秘","共同検討","LOI/協定","実証中","見送り"];
+const KSTC={"未接触":["#F1EFE8","#5F5E5A"],"リスト化":["#E8EEF5","#3D4DB7"],"ルート確認中":["#E3EEFB","#1D6FE0"],"初回接触":["#DCEBFA","#175CB8"],
+ "NDA/守秘":["#FAEEDA","#854F0B"],"共同検討":["#E1F5EE","#0F6E56"],"LOI/協定":["#CDEFE0","#0A5A45"],"実証中":["#0F6E56","#FFFFFF"],"見送り":["#FCEBEB","#A32D2D"]};
+const KROLES=["データ保有者","実装チャネル","支払者・顧客","制度側","技術・分析"];
+const KTOUCH=["NTTデータ","JDSC","両方","なし"];
+const KTOUCHC={"NTTデータ":["#E3EEFB","#175CB8"],"JDSC":["#FAE3F0","#A0246A"],"両方":["#EAE3FA","#5B3FB8"],"なし":["#F1EFE8","#5F5E5A"]};
+const KPRI=["◎","○","△",""];
+const KASSETS_BASE=["購買ID-POS（食品SM）","購買ID-POS（ドラッグ）","購買ID-POS（CVS）","購買パネル（消費者）","購買統計（外販）","レシートデータ","決済データ",
+ "食品卸データ","医薬品卸データ","食品メーカー商品データ","処方・調剤データ","健診データ","PHR・ウェアラブル","電力データ","人流データ","気象","不動産・住宅",
+ "宅配購買データ","高齢者訪問接点","自治体接点","保険者接点","技術・分析基盤"];
+const KTW={S:4,A:3,B:2,C:1,"新規":2,"保留":0};
+const K_ANCHOR=["N-B2","U34","U19","N-F1","U36"];
+let K=load("ucb-partners",{ver:1,partners:{},links:{},ucx:{}});
+let kView="ledger", kSort={key:"lev",dir:-1}, kF={q:"",owner:"",st:"",touch:"",asset:"",uc:"",role:""}, kEditId=null, kRevAsset="";
+function saveK(){K.ver=1;localStorage.setItem("ucb-partners",JSON.stringify(K));renderKai()}
+const kUC=id=>ucs.find(u=>u.id===id);
+const kAssets=()=>{const s=new Set(KASSETS_BASE);Object.values(K.partners).forEach(p=>(p.assets||[]).forEach(a=>s.add(a)));Object.values(K.ucx).forEach(x=>(x.assets||[]).forEach(a=>s.add(a)));return [...s]};
+const kOwners=()=>[...new Set(Object.values(K.partners).map(p=>p.owner).filter(Boolean))].sort();
+const kLinksOf=pid=>Object.values(K.links).filter(l=>l.pid===pid);
+const kLinksOfUC=uid=>Object.values(K.links).filter(l=>l.uid===uid);
+const kLev=pid=>kLinksOf(pid).reduce((s,l)=>{const u=kUC(l.uid);return s+(u?(KTW[u.tr]||1):1)},0);
+const kStIdx=st=>KST.indexOf(st);
+const kActive=p=>kStIdx(p.st)>=5&&p.st!=="見送り";
+const kUcScope=()=>{const s=new Set([...K_ANCHOR,...Object.keys(K.ucx),...Object.values(K.links).map(l=>l.uid)]);return [...s].filter(kUC).sort((a,b)=>{const ia=K_ANCHOR.indexOf(a),ib=K_ANCHOR.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b)})};
+const kChip=(t,c)=>'<span style="display:inline-block;background:'+c[0]+';color:'+c[1]+';border-radius:9px;padding:1px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+esc(t)+'</span>';
+const kTag=t=>'<span style="display:inline-block;background:#F1F5F9;border:1px solid #D7E0EA;border-radius:6px;padding:0 6px;font-size:11px;margin:1px 2px 1px 0;white-space:nowrap">'+esc(t)+'</span>';
+const kUcLabel=uid=>{const u=kUC(uid);return u?uid+' '+(u.n||"").slice(0,18):uid};
+function kFiltered(){const q=kF.q.toLowerCase();
+ return Object.values(K.partners).filter(p=>{
+  if(kF.owner&&(p.owner||"")!==kF.owner)return false;
+  if(kF.st&&p.st!==kF.st)return false;
+  if(kF.touch&&p.touch!==kF.touch)return false;
+  if(kF.role&&!(p.roles||[]).includes(kF.role))return false;
+  if(kF.asset&&!(p.assets||[]).includes(kF.asset))return false;
+  if(kF.uc&&!kLinksOf(p.id).some(l=>l.uid===kF.uc))return false;
+  if(q){const blob=[p.name,p.cat,p.touchSrc,p.route,p.memo,p.next,p.owner,(p.assets||[]).join(" "),kLinksOf(p.id).map(l=>l.uid+" "+l.issue).join(" ")].join(" ").toLowerCase();if(!blob.includes(q))return false}
+  return true});}
+function kSorted(arr){const k=kSort.key,d=kSort.dir;
+ const v=p=>k==="lev"?kLev(p.id):k==="st"?kStIdx(p.st):k==="ucn"?kLinksOf(p.id).length:k==="pri"?(KPRI.indexOf(p.pri||"")):k==="due"?(p.due||"9999"):(p[k]||"");
+ return arr.sort((a,b)=>{const x=v(a),y=v(b);return (x<y?-1:x>y?1:0)*d||a.name.localeCompare(b.name,"ja")})}
+function kSetSort(key){if(kSort.key===key)kSort.dir*=-1;else{kSort.key=key;kSort.dir=(key==="lev"||key==="ucn"||key==="pri")?-1:1}renderKai()}
+
+// ---- ページ描画 ----
+function renderKai(){const el=document.getElementById("pgKai");if(!el)return;
+ const n=Object.keys(K.partners).length, act=Object.values(K.partners).filter(kActive).length, drop=Object.values(K.partners).filter(p=>p.st==="見送り").length;
+ const over=Object.values(K.partners).filter(p=>p.due&&p.due<new Date().toISOString().slice(0,10)&&p.st!=="見送り").length;
+ let h='<div style="background:#FFF3F3;border:1px solid #F0B4B4;border-radius:8px;padding:6px 12px;font-size:12px;color:#8A2B2B;margin-bottom:8px;line-height:1.7">'
+  +'<b>取扱注意</b>：この台帳（企業名・接触状況・担当者）は公開HTMLには埋め込まれず、この端末のブラウザ内にのみ保存されます。共有は「JSON書き出し」→幹事→「JSON取り込み（結合）」で行い、GitHubにはpartners.jsonをコミットしないでください。</div>';
+ h+='<div class="row" style="gap:6px">'
+  +['ledger','台帳','matrix','UC×企業マトリクス','kanban','パイプライン','reverse','アセット逆引き','ucx','UC簡易版'].reduce((s,x,i,a)=>i%2?s+'<button class="btn" data-kv="'+a[i-1]+'" style="padding:5px 12px;font-size:13px;'+(kView===a[i-1]?'background:#0F6E56;color:#fff;border:none':'')+'">'+x+'</button>':s,'')
+  +'<span class="note" style="margin-left:10px">企業 <b>'+n+'</b>／共同検討以上 <b style="color:#0F6E56">'+act+'</b>／見送り '+drop+(over?'／<b style="color:#A32D2D">期日超過 '+over+'</b>':'')+'</span>'
+  +'<span style="margin-left:auto"></span>'
+  +'<button class="btn" data-ka="new" style="background:#0F6E56;color:#fff;border:none;padding:5px 12px;font-size:13px">＋ 企業追加</button>'
+  +'<button class="btn" data-ka="csv" style="padding:5px 12px;font-size:13px">CSV書き出し（台帳）</button>'
+  +'<button class="btn" data-ka="exp" style="padding:5px 12px;font-size:13px">JSON書き出し</button>'
+  +'<label class="btn" style="padding:5px 12px;font-size:13px;cursor:pointer">JSON取り込み（結合）<input type="file" accept=".json" style="display:none" id="kImp"></label>'
+  +'<button class="btn" data-ka="seed" style="padding:5px 12px;font-size:13px" title="同じフォルダの partners.json（シード）を読み込んで結合">シード読込</button>'
+  +'<button class="btn btnr" data-ka="clear" style="padding:5px 12px;font-size:13px">全消去</button></div>';
+ if(kView!=="ucx"){
+  const sel=(id,opts,val,ph)=>'<select data-kf="'+id+'" style="padding:4px 6px;font-size:12.5px"><option value="">'+ph+'</option>'+opts.map(o=>'<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>';
+  h+='<div class="row" style="gap:6px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px">'
+   +'<input data-kf="q" placeholder="検索（企業・課題・メモ）" value="'+esc(kF.q)+'" style="padding:4px 8px;font-size:12.5px;width:200px">'
+   +sel("owner",kOwners(),kF.owner,"担当者：全員")+sel("st",KST,kF.st,"ステータス：全て")+sel("touch",KTOUCH,kF.touch,"接点：全て")+sel("role",KROLES,kF.role,"役割：全て")
+   +sel("asset",kAssets(),kF.asset,"アセット：全て")
+   +'<select data-kf="uc" style="padding:4px 6px;font-size:12.5px"><option value="">UC：全て</option>'+kUcScope().map(id=>'<option value="'+esc(id)+'"'+(id===kF.uc?' selected':'')+'>'+esc(kUcLabel(id))+'</option>').join('')+'</select>'
+   +'<button class="btn" data-ka="resetf" style="padding:4px 10px;font-size:12px">解除</button></div>';
+ }
+ h+=kView==="ledger"?kLedger():kView==="matrix"?kMatrix():kView==="kanban"?kKanban():kView==="reverse"?kReverse():kUcxView();
+ el.innerHTML=h;
+ const imp=document.getElementById("kImp");if(imp)imp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{kMerge(JSON.parse(r.result.replace(/^﻿/,"")));alert("結合しました")}catch(err){alert("読み込み失敗："+err)}};r.readAsText(f)};
+}
+function kHead(){const cols=[["pri","優"],["name","企業"],["touch","接点"],["assets","保有アセット"],["roles","役割"],["ucn","UC"],["lev","レバレッジ"],["owner","担当"],["st","ステータス"],["next","次アクション"],["due","期日"],["issues","検討課題"]];
+ return '<tr>'+cols.map(c=>'<th data-ks="'+c[0]+'" style="position:sticky;top:0;background:#EEF3F8;text-align:left;padding:5px 7px;font-size:11.5px;border-bottom:2px solid #C9D6E4;cursor:pointer;white-space:nowrap">'+c[1]+(kSort.key===c[0]?(kSort.dir>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr>'}
+function kLedger(){const rows=kSorted(kFiltered());
+ let h='<div class="note" style="margin:4px 0 6px">レバレッジ＝関連UCのTier加重合計（S4・A3・B2・C1・新規2）。行クリックで編集。列見出しクリックで並び替え。</div>';
+ h+='<div style="overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:8px;background:#fff"><table style="border-collapse:collapse;width:100%;font-size:12.5px">'+kHead();
+ if(!rows.length)h+='<tr><td colspan="12" style="padding:24px;text-align:center;color:var(--mut)">台帳は空です。「シード読込」で叩き台（NTTデータ／JDSC接点企業のロングリスト）を読み込むか、「＋企業追加」から登録してください。</td></tr>';
+ for(const p of rows){const ls=kLinksOf(p.id),c=KSTC[p.st]||KSTC["未接触"];const over=p.due&&p.due<new Date().toISOString().slice(0,10)&&p.st!=="見送り";
+  h+='<tr data-kp="'+esc(p.id)+'" style="border-bottom:1px solid #E6ECF2;cursor:pointer;vertical-align:top" onmouseover="this.style.background=\'#F6FAFE\'" onmouseout="this.style.background=\'\'">'
+   +'<td style="padding:5px 7px;font-size:14px;text-align:center">'+esc(p.pri||"")+'</td>'
+   +'<td style="padding:5px 7px;min-width:170px"><b>'+esc(p.name)+'</b><div style="font-size:11px;color:var(--mut)">'+esc(p.cat||"")+(p.region&&p.region!=="全国"?'｜'+esc(p.region):'')+'</div></td>'
+   +'<td style="padding:5px 7px">'+kChip(p.touch||"なし",KTOUCHC[p.touch]||KTOUCHC["なし"])+'</td>'
+   +'<td style="padding:5px 7px;max-width:220px">'+(p.assets||[]).map(kTag).join('')+'</td>'
+   +'<td style="padding:5px 7px;font-size:11px;max-width:110px">'+(p.roles||[]).map(esc).join('<br>')+'</td>'
+   +'<td style="padding:5px 7px;white-space:nowrap">'+ls.map(l=>'<span title="'+esc(kUcLabel(l.uid))+'" style="display:inline-block;background:'+(K_ANCHOR.includes(l.uid)?'#0F6E56':'#5B6B7C')+';color:#fff;border-radius:5px;padding:0 5px;font-size:10.5px;margin:1px 2px 1px 0">'+esc(l.uid)+'</span>').join('')+'</td>'
+   +'<td style="padding:5px 7px;text-align:center;font-weight:700;color:#1D6FE0">'+kLev(p.id)+'</td>'
+   +'<td style="padding:5px 7px;white-space:nowrap">'+esc(p.owner||"—")+'</td>'
+   +'<td style="padding:5px 7px">'+kChip(p.st||"未接触",c)+(p.temp?'<div style="font-size:11px;color:var(--mut)">温度感：'+esc(p.temp)+'</div>':'')+'</td>'
+   +'<td style="padding:5px 7px;max-width:200px;font-size:12px">'+esc(p.next||"")+'</td>'
+   +'<td style="padding:5px 7px;white-space:nowrap;font-size:12px;'+(over?'color:#A32D2D;font-weight:700':'')+'">'+esc(p.due||"")+'</td>'
+   +'<td style="padding:5px 7px;max-width:280px;font-size:11.5px;line-height:1.5">'+ls.filter(l=>l.issue).map(l=>'<div><b style="color:#5B6B7C">'+esc(l.uid)+'</b> '+esc(l.issue)+(l.pri==="高"?' <span style="color:#A32D2D;font-weight:700">高</span>':'')+'</div>').join('')+'</td></tr>';
+ }
+ return h+'</table></div>'}
+function kMatrix(){const ps=kSorted(kFiltered()).filter(p=>p.st!=="見送り"||kF.st==="見送り");const ucsIn=kUcScope().filter(id=>!kF.uc||id===kF.uc);
+ let h='<div class="note" style="margin:4px 0 6px">セル色＝企業のアプローチ状況（●＝検討課題「高」あり）。行末＝共同検討以上の企業数／アセット充足率。列末＝レバレッジ。セルクリックで企業編集。</div>';
+ h+='<div style="overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:8px;background:#fff"><table style="border-collapse:collapse;font-size:12px"><tr><th style="position:sticky;left:0;top:0;background:#EEF3F8;z-index:3;padding:6px;text-align:left;min-width:220px">UC簡易版 ＼ 企業</th>';
+ for(const p of ps)h+='<th data-kp="'+esc(p.id)+'" style="position:sticky;top:0;background:#EEF3F8;padding:6px 4px;font-size:11px;font-weight:600;min-width:64px;max-width:90px;cursor:pointer;vertical-align:bottom;line-height:1.3"><div>'+kChip(p.touch||"なし",KTOUCHC[p.touch]||KTOUCHC["なし"])+'</div>'+esc(p.name.split(/[（／]/)[0].slice(0,10))+'</th>';
+ h+='<th style="position:sticky;top:0;right:0;background:#EEF3F8;padding:6px;font-size:11px;z-index:3;border-left:2px solid #C9D6E4">体制／充足</th></tr>';
+ for(const uid of ucsIn){const u=kUC(uid),x=K.ucx[uid]||{},ls=kLinksOfUC(uid);const act=ls.filter(l=>K.partners[l.pid]&&kActive(K.partners[l.pid])).length;
+  const need=x.assets||[];const cov=need.filter(a=>ls.some(l=>{const p=K.partners[l.pid];return p&&p.st!=="見送り"&&(p.assets||[]).includes(a)})).length;
+  h+='<tr><td data-ku="'+esc(uid)+'" style="position:sticky;left:0;background:#fff;z-index:2;padding:5px 6px;border-bottom:1px solid #E6ECF2;border-right:2px solid #C9D6E4;cursor:pointer"><b>'+esc(uid)+'</b> <span style="font-size:11px">'+esc((u.n||"").slice(0,20))+'</span> <span style="font-size:10.5px;color:var(--mut)">'+esc(u.tr)+'</span></td>';
+  for(const p of ps){const l=K.links[p.id+"|"+uid];const c=l?(KSTC[p.st]||KSTC["未接触"]):["#FAFAFA","#ccc"];
+   h+='<td data-kp="'+esc(p.id)+'" title="'+esc(l?(p.name+"／"+p.st+(l.issue?"／"+l.issue:"")):p.name+"（未リンク：クリックで編集）")+'" style="border-bottom:1px solid #E6ECF2;border-left:1px solid #F0F3F6;text-align:center;cursor:pointer;background:'+c[0]+';color:'+c[1]+';font-size:11px;padding:4px 2px">'+(l?(l.pri==="高"?'●':'○'):'')+'</td>'}
+  h+='<td style="position:sticky;right:0;background:#fff;z-index:2;border-left:2px solid #C9D6E4;border-bottom:1px solid #E6ECF2;padding:4px 6px;white-space:nowrap;font-size:11px"><b style="color:#0F6E56">'+act+'</b>社／'+(need.length?Math.round(cov/need.length*100)+'%':'—')+'</td></tr>'}
+ h+='<tr><td style="position:sticky;left:0;background:#EEF3F8;padding:5px 6px;font-size:11px;border-right:2px solid #C9D6E4"><b>レバレッジ</b></td>'+ps.map(p=>'<td style="text-align:center;background:#EEF3F8;font-weight:700;color:#1D6FE0;font-size:12px">'+kLev(p.id)+'</td>').join('')+'<td style="background:#EEF3F8"></td></tr>';
+ return h+'</table></div>'}
+function kKanban(){const ps=kFiltered();
+ let h='<div class="note" style="margin:4px 0 6px">ステータス別。カード左上の▶◀で前後に移動、カード本体クリックで編集。担当者フィルタで「自分の未対応」だけを表示。</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat('+KST.length+',minmax(150px,1fr));gap:6px;overflow:auto">';
+ for(const st of KST){const c=KSTC[st];const arr=kSorted(ps.filter(p=>p.st===st));
+  h+='<div style="background:#F6FAFE;border:1px solid var(--line);border-radius:8px;padding:6px;min-height:200px"><div style="margin-bottom:6px">'+kChip(st,c)+' <span class="note">'+arr.length+'</span></div>';
+  for(const p of arr){const i=kStIdx(st);const over=p.due&&p.due<new Date().toISOString().slice(0,10)&&st!=="見送り";
+   h+='<div data-kp="'+esc(p.id)+'" style="background:#fff;border:1px solid #D7E0EA;border-left:4px solid '+(KTOUCHC[p.touch]||KTOUCHC["なし"])[1]+';border-radius:6px;padding:5px 7px;margin-bottom:5px;font-size:12px;cursor:pointer;line-height:1.45">'
+    +'<div style="display:flex;gap:4px;align-items:center"><span data-kmv="'+esc(p.id)+'|-1" style="cursor:pointer;color:#8CA0B3;font-size:11px" title="前へ">◀</span><span data-kmv="'+esc(p.id)+'|1" style="cursor:pointer;color:#8CA0B3;font-size:11px" title="次へ">▶</span><b style="margin-left:2px">'+esc(p.pri||"")+' '+esc(p.name.split(/[（／]/)[0].slice(0,14))+'</b></div>'
+    +'<div style="font-size:11px;color:var(--mut)">'+esc(p.owner||"担当未定")+'　UC×'+kLinksOf(p.id).length+'　Lev '+kLev(p.id)+'</div>'
+    +(p.next?'<div style="font-size:11px">→ '+esc(p.next)+(p.due?' <span style="'+(over?'color:#A32D2D;font-weight:700':'color:var(--mut)')+'">('+esc(p.due)+')</span>':'')+'</div>':'')+'</div>'}
+  h+='</div>'}
+ return h+'</div>'}
+function kReverse(){const assets=kAssets();const cnt=a=>Object.values(K.partners).filter(p=>(p.assets||[]).includes(a)).length;
+ let h='<div class="note" style="margin:4px 0 6px">「このアセットを持つ企業と組めば、どのUCが動くか」。アセットを選ぶ→保有企業と、そのアセットを必要とするUC（UC簡易版で定義）を束ねて表示。</div>';
+ h+='<div style="margin-bottom:8px">'+assets.filter(a=>cnt(a)||Object.values(K.ucx).some(x=>(x.assets||[]).includes(a))).map(a=>'<button class="btn" data-kra="'+esc(a)+'" style="padding:3px 9px;font-size:12px;margin:2px;'+(kRevAsset===a?'background:#0F6E56;color:#fff;border:none':'')+'">'+esc(a)+' <span style="opacity:.7">'+cnt(a)+'</span></button>').join('')+'</div>';
+ if(!kRevAsset)return h;
+ const ps=kSorted(Object.values(K.partners).filter(p=>(p.assets||[]).includes(kRevAsset)));const ux=kUcScope().filter(id=>((K.ucx[id]||{}).assets||[]).includes(kRevAsset));
+ h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px"><b>保有企業（'+ps.length+'）</b>';
+ for(const p of ps)h+='<div data-kp="'+esc(p.id)+'" style="display:flex;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid #EEF2F6;cursor:pointer;font-size:12.5px">'+kChip(p.touch||"なし",KTOUCHC[p.touch]||KTOUCHC["なし"])+'<b>'+esc(p.name)+'</b><span style="margin-left:auto"></span>'+kChip(p.st,KSTC[p.st]||KSTC["未接触"])+'<span class="note">Lev '+kLev(p.id)+'</span></div>';
+ h+='</div><div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px"><b>このアセットを要するUC（'+ux.length+'）</b>';
+ for(const id of ux){const u=kUC(id);const have=kLinksOfUC(id).filter(l=>K.partners[l.pid]&&(K.partners[l.pid].assets||[]).includes(kRevAsset)&&K.partners[l.pid].st!=="見送り").length;
+  h+='<div data-ku="'+esc(id)+'" style="padding:5px 0;border-bottom:1px solid #EEF2F6;cursor:pointer;font-size:12.5px"><b>'+esc(id)+'</b> '+esc(u.n)+' <span class="note">'+esc(u.tr)+'／'+esc(u.t)+'</span><div style="font-size:11px;color:'+(have?'#0F6E56':'#A32D2D')+'">このアセットの候補企業：'+have+'社'+(have?'':'（穴）')+'</div></div>'}
+ if(!ux.length)h+='<div class="note">未定義。UC簡易版で「必要アセット」に追加すると表示されます。</div>';
+ return h+'</div></div>'}
+function kUcxView(){const scope=kUcScope();
+ let h='<div class="note" style="margin:4px 0 6px">UC簡易版＝既存UCの要約に「パートナーに求める役割」「パートナーが得るもの」「必要アセット」を加えた開拓用の一枚。緑枠＝購買×NDB系アンカー。</div>';
+ // ④ 推奨UC：外部保有データを要し（Type B/C）、判定がS/Aで、まだ台帳にないもの
+ const rec=ucs.filter(u=>!scope.includes(u.id)&&/Type [BC]/.test(u.dtype||"")&&["S","A"].includes(u.tr)).sort((a,b)=>(KTW[b.tr]||0)-(KTW[a.tr]||0)).slice(0,8);
+ if(rec.length)h+='<div style="background:#FFF6E3;border:1px solid #F2CE7B;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:12px"><b>開拓推奨（外部保有データを要する判定S/AのUC、未登録）</b>：'+rec.map(u=>'<button class="btn" data-kaddu="'+esc(u.id)+'" style="padding:2px 8px;font-size:11.5px;margin:2px">＋ '+esc(u.id)+' '+esc((u.n||"").slice(0,16))+' <span style="opacity:.6">'+esc(u.tr)+'</span></button>').join('')
+  +' <select data-kaddsel style="padding:2px 6px;font-size:11.5px"><option value="">他のUCを追加…</option>'+ucs.filter(u=>!scope.includes(u.id)).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.id+' '+(u.n||"").slice(0,22))+'</option>').join('')+'</select></div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:10px">';
+ for(const id of scope){const u=kUC(id),x=K.ucx[id]||{ask:"",give:"",assets:[]},ls=kLinksOfUC(id);const anchor=K_ANCHOR.includes(id);
+  const cov=(x.assets||[]).map(a=>[a,ls.filter(l=>K.partners[l.pid]&&K.partners[l.pid].st!=="見送り"&&(K.partners[l.pid].assets||[]).includes(a)).length]);
+  h+='<div style="background:#fff;border:'+(anchor?'2px solid #0F6E56':'1px solid var(--line)')+';border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.55">'
+   +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b style="font-size:14px">'+esc(id)+'</b><span>'+esc(u.n)+'</span><span style="margin-left:auto;font-size:11px;color:var(--mut)">'+esc(u.tr)+'／'+esc(u.t)+'／'+esc(CL[u.c]?CL[u.c][0]:u.c)+'</span></div>'
+   +'<div style="font-size:12px;color:#33414F;margin:4px 0">'+esc((u.s||"").slice(0,120))+(u.s&&u.s.length>120?'…':'')+'</div>'
+   +'<div style="font-size:11.5px;color:var(--mut)">想定支払者：'+esc(u.pay||"—")+'</div>'
+   +'<div style="margin-top:6px"><div class="lbl" style="margin:0;font-size:11.5px">パートナーに求める役割</div><textarea data-kx="'+esc(id)+'|ask" rows="2" style="width:100%;box-sizing:border-box;font-size:12px;padding:4px 6px">'+esc(x.ask||"")+'</textarea></div>'
+   +'<div><div class="lbl" style="margin:0;font-size:11.5px">パートナーが得るもの</div><textarea data-kx="'+esc(id)+'|give" rows="2" style="width:100%;box-sizing:border-box;font-size:12px;padding:4px 6px">'+esc(x.give||"")+'</textarea></div>'
+   +'<div style="margin-top:4px"><div class="lbl" style="margin:0;font-size:11.5px">必要アセット（候補企業数：赤＝穴）</div><div>'+cov.map(([a,n])=>'<span data-kxa="'+esc(id)+'|'+esc(a)+'" title="クリックで外す" style="display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;margin:1px 2px 1px 0;cursor:pointer;background:'+(n?'#E1F5EE':'#FCEBEB')+';color:'+(n?'#0F6E56':'#A32D2D')+'">'+esc(a)+' '+n+'</span>').join('')
+   +'<select data-kxadd="'+esc(id)+'" style="padding:1px 4px;font-size:11px;margin-left:4px"><option value="">＋追加</option>'+kAssets().filter(a=>!(x.assets||[]).includes(a)).map(a=>'<option>'+esc(a)+'</option>').join('')+'</select></div></div>'
+   +'<div style="margin-top:6px;font-size:11.5px"><b>候補企業（'+ls.length+'）</b> '+ls.map(l=>{const p=K.partners[l.pid];return p?'<span data-kp="'+esc(p.id)+'" style="cursor:pointer">'+kChip(p.name.split(/[（／]/)[0].slice(0,10)+'：'+p.st,KSTC[p.st]||KSTC["未接触"])+'</span> ':''}).join('')+'</div></div>'}
+ return h+'</div>'}
+
+// ---- 編集ダイアログ ----
+function kNewId(){return "p"+Date.now().toString(36)}
+function kEdit(pid){kEditId=pid;const p=K.partners[pid]||{id:pid,name:"",cat:"",assets:[],roles:[],touch:"なし",touchSrc:"",route:"",region:"全国",owner:me()||"",st:"リスト化",temp:"",next:"",due:"",nda:"なし",memo:"",pri:""};
+ const ls=Object.fromEntries(kLinksOf(pid).map(l=>[l.uid,l]));const scope=kUcScope();
+ const inp=(k,ph,w)=>'<input id="ke_'+k+'" value="'+esc(p[k]||"")+'" placeholder="'+ph+'" style="width:'+(w||"100%")+';box-sizing:border-box;padding:5px 7px;font-size:13px">';
+ const sel=(k,opts)=>'<select id="ke_'+k+'" style="padding:5px 7px;font-size:13px">'+opts.map(o=>'<option value="'+esc(o)+'"'+(o===(p[k]||"")?' selected':'')+'>'+esc(o||"（なし）")+'</option>').join('')+'</select>';
+ const chk=(k,opts)=>opts.map(o=>'<label style="display:inline-block;margin:2px 8px 2px 0;font-size:12.5px;white-space:nowrap"><input type="checkbox" data-kck="'+k+'" value="'+esc(o)+'"'+((p[k]||[]).includes(o)?' checked':'')+'> '+esc(o)+'</label>').join('');
+ let h='<div style="width:min(960px,94vw);max-height:88vh;overflow:auto;font-size:13px;line-height:1.6">'
+  +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><b style="font-size:16px">'+(K.partners[pid]?'企業編集':'企業追加')+'</b><span class="note">最終更新 '+esc((p.up||"").slice(0,16).replace("T"," "))+'</span><span style="margin-left:auto"></span>'
+  +(K.partners[pid]?'<button class="btn btnr" onclick="kDel(\''+jsq(pid)+'\')" style="padding:4px 10px;font-size:12px">削除</button>':'')+'<button class="btn" onclick="document.getElementById(\'io\').close()" style="padding:4px 10px;font-size:12px">閉じる</button></div>'
+  +'<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">'
+  +'<div><div class="lbl" style="margin:0">企業名</div>'+inp("name","例：ツルハホールディングス")+'</div><div><div class="lbl" style="margin:0">業種</div>'+inp("cat","例：ドラッグストア")+'</div><div><div class="lbl" style="margin:0">地域</div>'+inp("region","全国／沖縄 など")+'</div></div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-top:6px">'
+  +'<div><div class="lbl" style="margin:0">優先</div>'+sel("pri",KPRI)+'</div><div><div class="lbl" style="margin:0">接点</div>'+sel("touch",KTOUCH)+'</div><div><div class="lbl" style="margin:0">担当者</div><input id="ke_owner" list="kOwnersDL" value="'+esc(p.owner||"")+'" style="width:100%;box-sizing:border-box;padding:5px 7px;font-size:13px"><datalist id="kOwnersDL">'+kOwners().map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist></div>'
+  +'<div><div class="lbl" style="margin:0">ステータス</div>'+sel("st",KST)+'</div><div><div class="lbl" style="margin:0">NDA</div>'+sel("nda",["なし","締結中","締結済"])+'</div></div>'
+  +'<div style="margin-top:6px"><div class="lbl" style="margin:0">接点の根拠（誰と・何を・いつ・出典）</div>'+inp("touchSrc","例：NTTデータBSが顧客基盤を構築（2022事例）")+'</div>'
+  +'<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:6px"><div><div class="lbl" style="margin:0">紹介ルート（誰経由で当たるか）</div>'+inp("route","例：NTTデータBS経由／JDSC既存顧客→他部門紹介")+'</div><div><div class="lbl" style="margin:0">温度感</div>'+sel("temp",["","高","中","低","不明"])+'</div></div>'
+  +'<div style="display:grid;grid-template-columns:3fr 1fr;gap:8px;margin-top:6px"><div><div class="lbl" style="margin:0">次アクション</div>'+inp("next","例：〇〇氏に紹介依頼メール")+'</div><div><div class="lbl" style="margin:0">期日</div><input id="ke_due" type="date" value="'+esc(p.due||"")+'" style="width:100%;box-sizing:border-box;padding:4px 7px;font-size:13px"></div></div>'
+  +'<div style="margin-top:6px"><div class="lbl" style="margin:0">保有アセット</div>'+chk("assets",kAssets())+' <input id="ke_newasset" placeholder="＋新しいアセット名" style="padding:3px 6px;font-size:12px;width:180px"></div>'
+  +'<div style="margin-top:6px"><div class="lbl" style="margin:0">役割区分</div>'+chk("roles",KROLES)+'</div>'
+  +'<div style="margin-top:6px"><div class="lbl" style="margin:0">メモ（なぜ筋が良いか／懸念）</div><textarea id="ke_memo" rows="2" style="width:100%;box-sizing:border-box;font-size:12.5px;padding:5px 7px">'+esc(p.memo||"")+'</textarea></div>'
+  +'<div style="margin-top:10px"><div class="lbl" style="margin:0">関連UC と 検討課題（UCごと）</div><div style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#F9FBFD">';
+ for(const uid of scope){const l=ls[uid];const u=kUC(uid);
+  h+='<div style="display:grid;grid-template-columns:230px 1fr 60px;gap:6px;align-items:start;padding:4px 0;border-bottom:1px solid #EEF2F6"><label style="font-size:12.5px"><input type="checkbox" data-klk="'+esc(uid)+'"'+(l?' checked':'')+'> <b>'+esc(uid)+'</b> '+esc((u.n||"").slice(0,16))+' <span class="note">'+esc(u.tr)+'</span></label>'
+   +'<input data-kli="'+esc(uid)+'" value="'+esc(l?l.issue:"")+'" placeholder="検討課題（この企業×このUC固有の論点）" style="padding:3px 6px;font-size:12px">'
+   +'<select data-klp="'+esc(uid)+'" style="padding:3px 4px;font-size:12px">'+["高","中","低"].map(o=>'<option'+((l?l.pri:"中")===o?' selected':'')+'>'+o+'</option>').join('')+'</select></div>'}
+ h+='<div class="note" style="margin-top:4px">他のUCをリンクしたい場合は「UC簡易版」タブで先にUCを追加してください。</div></div></div>'
+  +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" style="background:#0F6E56;color:#fff;border:none" onclick="kSave()">保存</button><button class="btn" onclick="document.getElementById(\'io\').close()">キャンセル</button></div></div>';
+ const _io=document.getElementById("io");_io.style.maxWidth="980px";_io.addEventListener("close",()=>{_io.style.maxWidth=""},{once:true});document.getElementById("ioBody").innerHTML=h;_io.showModal()}
+function kSave(){const pid=kEditId;const g=id=>(document.getElementById("ke_"+id)||{}).value||"";
+ const name=g("name").trim();if(!name){alert("企業名は必須です");return}
+ const cks=k=>[...document.querySelectorAll('[data-kck="'+k+'"]:checked')].map(e=>e.value);
+ const assets=cks("assets");const na=g("newasset").trim();if(na&&!assets.includes(na))assets.push(na);
+ const old=K.partners[pid]||{};
+ K.partners[pid]={...old,id:pid,name,cat:g("cat"),region:g("region"),pri:g("pri"),touch:g("touch"),owner:g("owner").trim(),st:g("st"),nda:g("nda"),touchSrc:g("touchSrc"),route:g("route"),temp:g("temp"),next:g("next"),due:g("due"),memo:g("memo"),assets,roles:cks("roles"),up:hNow()};
+ for(const cb of document.querySelectorAll("[data-klk]")){const uid=cb.dataset.klk,key=pid+"|"+uid;const issue=(document.querySelector('[data-kli="'+uid+'"]')||{}).value||"",pri=(document.querySelector('[data-klp="'+uid+'"]')||{}).value||"中";
+  if(cb.checked){const o=K.links[key]||{};if(!o.pid||o.issue!==issue||o.pri!==pri)K.links[key]={...o,pid,uid,issue,pri,memo:o.memo||"",up:hNow()}}else if(K.links[key])delete K.links[key]}
+ document.getElementById("io").close();saveK()}
+function kDel(pid){if(!confirm("この企業と関連リンクを削除します。よろしいですか？"))return;delete K.partners[pid];for(const k in K.links)if(K.links[k].pid===pid)delete K.links[k];document.getElementById("io").close();saveK()}
+function kMove(pid,d){const p=K.partners[pid];if(!p)return;const i=Math.max(0,Math.min(KST.length-1,kStIdx(p.st)+d));p.st=KST[i];p.up=hNow();saveK()}
+
+// ---- 取り込み（結合）／書き出し ----
+function kMerge(j){if(!j||typeof j!=="object")throw"形式不正";
+ const newer=(a,b)=>!a||((b.up||"")>(a.up||""));
+ for(const id in (j.partners||{}))if(newer(K.partners[id],j.partners[id]))K.partners[id]=j.partners[id];
+ for(const k in (j.links||{}))if(newer(K.links[k],j.links[k]))K.links[k]=j.links[k];
+ for(const u in (j.ucx||{}))if(newer(K.ucx[u],j.ucx[u]))K.ucx[u]=j.ucx[u];
+ saveK()}
+function kExport(){const j=JSON.stringify({ver:1,meta:{title:"開拓台帳",by:normName(me())||"匿名",exportedAt:hNow()},partners:K.partners,links:K.links,ucx:K.ucx},null,1);
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+j],{type:"application/json;charset=utf-8"}));a.download="kaitaku-"+(me()||"export")+"-"+hNow().slice(0,10)+".json";a.click()}
+function kCSV(){const q=s=>'"'+String(s==null?"":s).replace(/"/g,'""')+'"';
+ const rows=[["UC","UC名","判定","時間軸","想定支払者","パートナーに求める役割","パートナーが得るもの","企業","業種","地域","優先","接点","接点の根拠","紹介ルート","保有アセット","役割区分","担当者","ステータス","温度感","NDA","次アクション","期日","検討課題","課題優先","レバレッジ","企業メモ","更新"].map(q).join(",")];
+ const ps=kSorted(Object.values(K.partners));
+ for(const p of ps){const ls=kLinksOf(p.id);const base=[p.name,p.cat,p.region,p.pri,p.touch,p.touchSrc,p.route,(p.assets||[]).join("｜"),(p.roles||[]).join("｜"),p.owner,p.st,p.temp,p.nda,p.next,p.due];
+  if(!ls.length)rows.push([...["","","","","","",""],...base,"","",kLev(p.id),p.memo,(p.up||"").slice(0,10)].map(q).join(","));
+  for(const l of ls){const u=kUC(l.uid)||{},x=K.ucx[l.uid]||{};rows.push([l.uid,u.n,u.tr,u.t,u.pay,x.ask,x.give,...base,l.issue,l.pri,kLev(p.id),p.memo,(p.up||"").slice(0,10)].map(q).join(","))}}
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv;charset=utf-8"}));a.download="kaitaku-daicho-"+hNow().slice(0,10)+".csv";a.click()}
+function kSeed(){fetch("partners.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{kMerge(j);alert("シードを結合しました（"+Object.keys(j.partners||{}).length+"社）")}).catch(e=>alert("partners.json が見つかりません（同じフォルダに置くか、「JSON取り込み」でファイルを選択してください）"))}
+
+// ---- イベント委譲 ----
+document.getElementById("pgKai").addEventListener("click",e=>{
+ const t=e.target.closest("[data-kv],[data-ka],[data-ks],[data-kmv],[data-kra],[data-kaddu],[data-kxa],[data-kp],[data-ku]");if(!t)return;
+ if(t.dataset.kv){kView=t.dataset.kv;renderKai();return}
+ if(t.dataset.ka){const a=t.dataset.ka;if(a==="new")kEdit(kNewId());else if(a==="csv")kCSV();else if(a==="exp")kExport();else if(a==="seed")kSeed();else if(a==="resetf"){kF={q:"",owner:"",st:"",touch:"",asset:"",uc:"",role:""};renderKai()}
+  else if(a==="clear"){if(confirm("この端末の開拓台帳をすべて消去します（書き出し済みのJSONは残ります）。よろしいですか？")){K={ver:1,partners:{},links:{},ucx:{}};saveK()}}return}
+ if(t.dataset.ks){kSetSort(t.dataset.ks);return}
+ if(t.dataset.kmv){const [pid,d]=t.dataset.kmv.split("|");kMove(pid,+d);e.stopPropagation();return}
+ if(t.dataset.kra){kRevAsset=kRevAsset===t.dataset.kra?"":t.dataset.kra;renderKai();return}
+ if(t.dataset.kaddu){K.ucx[t.dataset.kaddu]=K.ucx[t.dataset.kaddu]||{uid:t.dataset.kaddu,ask:"",give:"",assets:[],up:hNow()};saveK();return}
+ if(t.dataset.kxa){const [uid,a]=t.dataset.kxa.split("|");const x=K.ucx[uid];if(x){x.assets=(x.assets||[]).filter(v=>v!==a);x.up=hNow();saveK()}return}
+ if(t.dataset.kp){kEdit(t.dataset.kp);return}
+ if(t.dataset.ku){kView="ucx";renderKai();return}
+});
+document.getElementById("pgKai").addEventListener("change",e=>{const t=e.target;
+ if(t.dataset.kf){kF[t.dataset.kf]=t.value;renderKai();return}
+ if(t.dataset.kx){const [uid,k]=t.dataset.kx.split("|");K.ucx[uid]=K.ucx[uid]||{uid,ask:"",give:"",assets:[]};K.ucx[uid][k]=t.value;K.ucx[uid].up=hNow();localStorage.setItem("ucb-partners",JSON.stringify(K));return}
+ if(t.dataset.kxadd){const uid=t.dataset.kxadd;if(!t.value)return;K.ucx[uid]=K.ucx[uid]||{uid,ask:"",give:"",assets:[]};K.ucx[uid].assets=[...(K.ucx[uid].assets||[]),t.value];K.ucx[uid].up=hNow();saveK();return}
+ if(t.hasAttribute("data-kaddsel")){if(!t.value)return;K.ucx[t.value]={uid:t.value,ask:"",give:"",assets:[],up:hNow()};saveK();return}
+});
+document.getElementById("pgKai").addEventListener("input",e=>{const t=e.target;if(t.dataset.kf==="q"){kF.q=t.value;clearTimeout(window._kqT);window._kqT=setTimeout(()=>{renderKai();const i=document.querySelector('[data-kf="q"]');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},350)}});
+
+// setView を拡張（既存の分岐は温存）
+const _setViewBase=setView;
+setView=function(v){_setViewBase(v==="kai"?"cmt":v);
+ document.getElementById("pgCmt").style.display=v==="cmt"?"":"none";
+ document.getElementById("pgKai").style.display=v==="kai"?"":"none";
+ document.getElementById("navC").style.cssText=v==="cmt"?"background:#1D6FE0;color:#fff;border:none":"";
+ document.getElementById("navK").style.cssText=v==="kai"?"background:#0F6E56;color:#fff;border:none":"";
+ if(v==="kai"){view="kai";renderKai()}};
 
 </script></body></html>
