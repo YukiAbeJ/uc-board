@@ -54,7 +54,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:#1D6FE0;cursor:pointer;
 .hst-未処理{color:#888}.hst-アクション化{color:#0F6E56;font-weight:700}.hst-UC反映{color:#1D6FE0;font-weight:700}.hst-保留{color:#B07A00}
 </style></head><body>
 <div class="row">
- <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v7.2（フェーズ0投票 6名結合済）</span></h1>
+ <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v7.3（フェーズ0投票 6名結合済・拾い忘れ防止）</span></h1>
  <input id="me" placeholder="あなたの名前（★・コメント用）" style="width:210px">
  <span id="cnt" class="note"></span>
  <span style="margin-left:auto"></span>
@@ -914,7 +914,7 @@ const jsq=s=>esc(String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"));
 const HPHASES=[
  {id:"P0",n:"フェーズ0 閲覧",g:"まず知る：ボード全体を眺めて、率直な第一印象・疑問・論点を集める段階。絞り込みはまだ行いません。",tags:["面白い・推す","疑問（確認したいこと）","検討課題（議論すべき論点）","データ疑義","その他"]},
  {id:"M1",n:"Step1 合格判定",g:"土台を固める：このボードを議論の共通土台として使えるか点検する段階。致命的な誤り・重複・欠落を洗い出して潰します。",tags:["致命的欠陥","重複・統合","欠落UC","データ疑義","面白い・推す","その他"]},
- {id:"M2",n:"Step2 絞り込み",g:"選ぶ：★評価と議論をもとに、73件からPoC（実証）に進めるUCを3〜5件（Tier1）に絞り込む段階。推す理由・懸念を出し合います。",tags:["推す理由","懸念","条件付き賛成","代替案","その他"]},
+ {id:"M2",n:"Step2 絞り込み",g:"選ぶ：★評価と議論をもとに、73件からPoC（実証）に進めるUCを3〜5件（Tier1）に絞り込む段階。推す理由・懸念を出し合います。",tags:["推す理由","懸念","条件付き賛成","代替案","ワイルドカード（1人1枚）","その他"]},
  {id:"M3",n:"Step3＋PoC設計",g:"形にする：選ばれたUCごとに実証計画（検証仮説・KPI・データ調達・体制・予算）を作り、パートナーと組んで実行できる状態にする段階。",tags:["KPI・検証","データ調達","体制・パートナー","予算・契約","その他"]}
 ];
 const HPC={P0:["#E6F1FB","#85B7EB","#0C447C"],M1:["#FAEEDA","#FAC775","#633806"],M2:["#EAF3DE","#97C459","#27500A"],M3:["#EEEDFE","#AFA9EC","#3C3489"]};
@@ -972,6 +972,7 @@ function hAdd(){
  if(uc&&!byId(uc)){hMsg("UC ID「"+uc+"」はボードに見つかりません。IDを確認するか、空欄にして貼ってください");return}
  const anon=(document.getElementById("hAnon")||{}).checked;
  const nm=anon?"匿名":(normName(me())||"");
+ if(tag==="ワイルドカード（1人1枚）"){if(anon){hMsg("ワイルドカードは匿名では貼れません（1人1枚の判定に名前が必要です）");return}if(!uc){hMsg("ワイルドカードは関連UCの指定が必須です");return}if(Object.values(soc.stickies).some(s=>s.ph===hph&&s.tag===tag&&s.name===nm)){hMsg("ワイルドカードは1人1枚です。既存の1枚を編集・削除してから貼ってください");return}}
  if(!nm){hMsg("上部の名前欄を入力するか、「匿名で投稿」にチェックを入れてください");return}
  const id="S-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  soc.stickies[id]={ph:hph,tag,text:txt,uc:uc||"",name:nm,at:hNow()};
@@ -1071,6 +1072,21 @@ function hHoldZero(){hInit();const ss=Object.entries(soc.stickies).filter(([id,s
  if(typeof confirm==="function"&&!confirm("票が0の未処理付箋 "+ss.length+"枚をまとめて「保留」にします。後で棚卸しで拾えます。よろしいですか？"))return;
  for(const [id,s] of ss){s.dsp={...(s.dsp||{}),st:"保留"};hNoteAdd(s,"票0一括保留 "+hDate());s.up=hNow()}
  saveS();renderHassan();hMsg(ss.length+"枚を保留にしました",true)}
+function hHoldUndo(all){hInit();const ss=Object.entries(soc.stickies).filter(([id,s])=>hEff(s)==="保留"&&(all||s.ph===hph));
+ if(!ss.length){hMsg("戻す保留がありません");return}
+ if(typeof confirm==="function"&&!confirm((all?"全段階":"この段階")+"の保留 "+ss.length+"枚をすべて「未処理」に戻します。よろしいですか？"))return;
+ for(const [id,s] of ss){s.dsp={...(s.dsp||{}),st:"未処理"};s.dsp.note=(s.dsp.note||"").split("／").filter(x=>!/^保留 |^票0一括保留 /.test(x)).join("／");s.up=hNow()}
+ saveS();renderHassan();hMsg(ss.length+"枚を未処理に戻しました",true)}
+function hUndiscussed(){const has=new Set(Object.values(soc.stickies).map(s=>s.uc).filter(Boolean));
+ return ucs.filter(u=>["S","A"].includes(u.tr)&&!has.has(u.id)).sort((a,b)=>(KTW[b.tr]||0)-(KTW[a.tr]||0)||a.id.localeCompare(b.id))}
+function hAddUndiscussed(uid){hInit();const u=byId(uid);if(!u)return;const nm=normName(me())||"幹事";
+ const id="S-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ soc.stickies[id]={ph:hph,tag:"代替案",text:"未議論："+uid+" "+(u.n||"")+"（判定"+u.tr+"・付箋0枚。推す／落とすを決める）",uc:uid,name:nm,at:hNow()};
+ saveS();renderHassan();hMsg(uid+" を島「代替案」に「未議論」として貼りました",true)}
+function hAddAllUndiscussed(){const list=hUndiscussed();if(!list.length){hMsg("未議論のS/A UCはありません");return}
+ if(typeof confirm==="function"&&!confirm("未議論のS/A UC "+list.length+"件を島「代替案」にまとめて貼ります。よろしいですか？"))return;
+ hInit();const nm=normName(me())||"幹事";for(const u of list){const id="S-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);soc.stickies[id]={ph:hph,tag:"代替案",text:"未議論："+u.id+" "+(u.n||"")+"（判定"+u.tr+"・付箋0枚。推す／落とすを決める）",uc:u.id,name:nm,at:hNow()}}
+ saveS();renderHassan();hMsg(list.length+"件を貼りました",true)}
 function hSetDecider(v){hInit();soc.deciders=soc.deciders||{};soc.deciders[hph]=v;hSaveQ()}
 // アクション完了→付箋へ結果を自動付与（閉ループ）
 function hActEdit(id,f,v){
@@ -1244,7 +1260,7 @@ function renderHassan(){
   const gt=hPhaseGate();const dec=((soc.deciders||{})[hph]||"");
   form='<div style="margin:8px 0;background:#F6FBF8;border:1px solid #BFE3D2;border-radius:8px;padding:8px 11px;font-size:12.5px;line-height:1.7"><b>'+esc(hML("act")[0])+'の手順（ファシリテーター1人が操作・30分目安）</b>'
    +'<div class="row" style="gap:8px;align-items:center;margin:4px 0"><span>デサイダー（最終判断者）：</span><input value="'+esc(dec)+'" placeholder="この段階の最終判断者" onchange="hSetDecider(this.value)" style="width:140px;padding:3px 7px">'
-   +'<button class="btn" style="padding:3px 10px;font-size:12px" onclick="hHoldZero()">票0の未処理を一括保留</button></div>'
+   +'<button class="btn" style="padding:3px 10px;font-size:12px" onclick="hHoldZero()">票0の未処理を一括保留</button><button class="btn" style="padding:3px 10px;font-size:12px;color:#7A5A00" onclick="hHoldUndo(false)">保留を全部未処理に戻す</button></div>'
    +'0. デサイダーを決める → <b>票0を一括保留</b>で視界から外す（後で棚卸しで拾える）<br>'
    +'1. 票の多いUCから順に開く。決める単位は<b>束（UC×島）</b>。束の「この束をやる…」で種別を選ぶと、付箋本文をチェックリストに持つ1件のアクションになる<br>'
    +'2. 束で扱いが分かれる付箋だけ、付箋の<b>三択</b>で個別に決める：<b>やる</b>（種別＝記述修正／確認・調査／設計課題／仕様変更、または「その場で対応済み」）／<b>後で</b>（持ち越し先のStep、または保留）／<b>やらない</b>（理由を一行）<br>'
@@ -1253,7 +1269,15 @@ function renderHassan(){
    +'5. <b>段階の完了＝未処理0枚 かつ アクション完了率80%以上</b>（致命的欠陥に紐づくものは100%）。'
    +'<span style="display:inline-block;margin-left:6px;padding:2px 10px;border-radius:10px;font-weight:700;background:'+(gt.ok?'#E1F5EE':'#FDECEC')+';color:'+(gt.ok?'#0F6E56':'#8F2727')+'">'+(gt.ok?'✔ この段階は完了条件を満たしています':'未処理'+gt.pend+'枚／アクション完了 '+gt.done+'/'+gt.acts+'（'+gt.rate+'%）'+(gt.crit?'／致命的欠陥の未完了'+gt.crit:''))+'</span></div>';
  }
- const ucref=hmode==="add"?('<div style="background:#F4F8FD;border:1px solid #C9DEF5;border-radius:10px;padding:9px 11px;margin:8px 0">'
+ const und=(hmode==="add"&&hph==="M2")?(function(){const list=hUndiscussed();
+  const wild=Object.values(soc.stickies).filter(s=>s.ph==="M2"&&s.tag==="ワイルドカード（1人1枚）");const mine=wild.filter(s=>s.name===normName(me())).length;
+  return '<div style="background:#FFF6E3;border:1px solid #F2CE7B;border-radius:10px;padding:9px 11px;margin:8px 0;font-size:12.5px;line-height:1.7">'
+   +'<b style="color:#7A5A00">拾い忘れ防止（Step2 ①の冒頭に）</b><br>'
+   +'<b>ワイルドカード枠</b>：票は集まっていないが自分は推すUCを、島「ワイルドカード（1人1枚）」にUC番号付きで1枚だけ貼る。②で票が付けば通常の束として③へ。あなたの枚数：<b>'+mine+' / 1</b>　（全体 '+wild.length+'枚）<br>'
+   +'<b>未議論UC</b>：判定S/Aで、どの段階にも付箋が1枚もないUC（'+list.length+'件）。幹事が「代替案」に貼ってTier判定の対象から漏らさない。 '
+   +(list.length?'<button class="btn" style="padding:2px 9px;font-size:12px" onclick="hAddAllUndiscussed()">全部貼る</button><div style="margin-top:4px">'+list.map(u=>'<span style="display:inline-flex;align-items:center;gap:4px;border:1px solid #E3C96B;background:#fff;border-radius:12px;padding:2px 8px;margin:2px;font-size:12px"><b>'+esc(u.id)+'</b> '+esc((u.n||"").slice(0,18))+' <span class="note">'+esc(u.tr)+'</span><a href="javascript:void(0)" onclick="hAddUndiscussed(\''+jsq(u.id)+'\')" style="font-weight:700;color:#0F6E56">＋貼る</a></span>').join('')+'</div>':'<span style="color:#0F6E56;font-weight:700">すべて議論済み</span>')
+   +'</div>'})():'';
+ const ucref=hmode==="add"?(und+'<div style="background:#F4F8FD;border:1px solid #C9DEF5;border-radius:10px;padding:9px 11px;margin:8px 0">'
   +'<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:13px;color:#0C447C">UCを確認しながら書く</b>'
   +'<input id="hUcQ" value="'+esc(hq)+'" oninput="hQ(this.value)" placeholder="UC番号 または キーワード（例：U09、熱中症、介護）" style="flex:1;min-width:220px"></div>'
   +'<div id="hUcRes" style="margin-top:6px"></div></div>'):'';
@@ -1349,6 +1373,7 @@ function renderHassan(){
   const holds=Object.entries(soc.stickies).filter(([id,s])=>hEff(s)==="保留").sort((a,b)=>(a[1].ph<b[1].ph?-1:1));
   if(holds.length){const phn2=Object.fromEntries(HPHASES.map(p=>[p.id,p.n.split(" ")[0]]));
    actsBlock+='<details style="margin-top:12px;background:#FFFBEA;border:1px solid #E3C96B;border-radius:9px;padding:8px 11px"'+(window._hHoldOpen?' open':'')+' ontoggle="window._hHoldOpen=this.open"><summary style="cursor:pointer"><b style="font-size:13.5px;color:#7A5A00">パーキングロット（保留 '+holds.length+'枚）</b><span class="note" style="margin-left:8px">段階の冒頭に5分だけ棚卸し：この段階で扱うなら「拾う」、扱わないなら「やらない」。触らなければ保留のまま残ります。クリックで開閉</span></summary>'
+    +'<div class="row" style="gap:6px;margin:4px 0"><button class="btn" style="padding:2px 9px;font-size:12px" onclick="hHoldUndo(false)">この段階の保留を全部未処理に戻す</button><button class="btn" style="padding:2px 9px;font-size:12px" onclick="hHoldUndo(true)">全段階の保留を全部戻す</button></div>'
     +holds.map(([id,s])=>'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 0;border-top:1px dashed #E3C96B;font-size:12.5px"><span class="note" style="white-space:nowrap">'+esc(phn2[s.ph]||s.ph)+'</span>'+(s.uc?'<b style="color:#0C447C">'+esc(s.uc)+'</b>':'')+'<span>'+esc(s.text)+'</span><span class="note">'+esc(s.tag)+'</span><span style="margin-left:auto"></span>'
     +'<button class="btn" style="padding:2px 9px;font-size:12px;background:#1D6FE0;color:#fff;border:none" onclick="hHoldPick(\''+jsq(id)+'\')">拾う</button><button class="btn" style="padding:2px 9px;font-size:12px" onclick="hHoldDrop(\''+jsq(id)+'\')">やらない</button></div>').join('')+'</details>'}
  }
