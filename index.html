@@ -54,7 +54,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:#1D6FE0;cursor:pointer;
 .hst-未処理{color:#888}.hst-アクション化{color:#0F6E56;font-weight:700}.hst-UC反映{color:#1D6FE0;font-weight:700}.hst-保留{color:#B07A00}
 </style></head><body>
 <div class="row">
- <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v7.3（フェーズ0投票 6名結合済・拾い忘れ防止）</span></h1>
+ <h1>医療データ二次利用UC｜ディスカッション・ボード <span style="font-size:12px;color:var(--mut)">公開版 v7.3.1（フェーズ0投票 6名結合済・拾い忘れ防止）</span></h1>
  <input id="me" placeholder="あなたの名前（★・コメント用）" style="width:210px">
  <span id="cnt" class="note"></span>
  <span style="margin-left:auto"></span>
@@ -1121,6 +1121,24 @@ function hPromoteUc(uc){
  const u=byId(uc);
  hMakeAction({ph:hph,title:uc+"　"+((u&&u.n)||"")+"：未処理"+stks.length+"件の対応",kind:"確認・調査",ucs:[uc],src:"UC "+uc,items:stks.map(([id,s])=>[id,s.text])});
  hMsg(uc+"の未処理付箋をまとめて1件のアクションにしました。台帳で種別・担当・期限を入れてください",true)}
+function hBundleDecide(uc,tag,v){hInit();if(!v)return;
+ const stks=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&(s.uc||"")===uc&&s.tag===tag&&hEff(s)==="未処理");
+ if(!stks.length){hMsg("この束に未処理の付箋がありません");return}
+ if(v.startsWith("do:")){hPromoteBundle(uc,tag,v.slice(3));return}
+ const label=v==="no"?"やらない":v==="later:hold"?"保留":"後で："+(((HPHASES.find(p=>p.id===v.slice(6))||{}).n||"").split(" ")[0]);
+ if(typeof confirm==="function"&&!confirm("束「"+(uc||"UC横断")+"×"+tag+"」の未処理 "+stks.length+"枚をまとめて「"+label+"」にします。よろしいですか？"))return;
+ for(const [id,s] of stks){
+  if(v==="no"){s.act=null;s.dsp={...(s.dsp||{}),st:"見送り"};hNoteAdd(s,"束で見送り "+hDate())}
+  else if(v==="later:hold"){s.act=null;s.dsp={...(s.dsp||{}),st:"保留"};hNoteAdd(s,"保留 "+hDate())}
+  else{const nx=HPHASES.find(p=>p.id===v.slice(6));if(!nx)continue;const nid="S-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+   soc.stickies[nid]={ph:nx.id,tag:s.tag,text:s.text,uc:s.uc||"",name:s.name,at:hNow(),from:s.ph};s.act=null;s.dsp={...(s.dsp||{}),st:"次Stepへ引継"};hNoteAdd(s,"→"+nx.n.split(" ")[0]+" "+hDate())}
+  s.up=hNow()}
+ saveS();renderHassan();hMsg("束の"+stks.length+"枚を「"+label+"」にしました"+(v==="no"?"。理由を各付箋のメモに一行入れてください":""),true)}
+function hBundleSel(uc,tag){const later=HPHASES.filter((p,i)=>i>HPHASES.findIndex(x=>x.id===hph));
+ return '<select style="padding:4px 8px;font-size:12.5px;font-weight:700;background:#0F6E56;color:#fff;border:none;border-radius:6px" onchange="if(this.value){hBundleDecide(\''+jsq(uc)+'\',\''+jsq(tag)+'\',this.value);this.value=\'\'}"><option value="">この束をまとめて決める ▾</option>'
+  +'<optgroup label="やる（宿題化）">'+HKINDS.map(k=>'<option value="do:'+esc(k)+'">やる：'+esc(k)+'</option>').join('')+'</optgroup>'
+  +'<optgroup label="後で">'+later.map(p=>'<option value="later:'+p.id+'">後で：'+esc(p.n.split(" ")[0])+'へ</option>').join('')+'<option value="later:hold">後で：保留</option></optgroup>'
+  +'<optgroup label="やらない"><option value="no">やらない（理由は各付箋に）</option></optgroup></select>'}
 function hKindSel(onch,label){return '<select style="padding:3px 6px;font-size:12px" onchange="if(this.value){'+onch+';this.value=\'\'}"><option value="">'+esc(label||"この束をやる…")+'</option>'+HKINDS.map(k=>'<option value="'+esc(k)+'">やる：'+esc(k)+'</option>').join('')+'</select>'}
 function hUcCards(mk){
  const all=Object.entries(soc.stickies).filter(([id,s])=>s.ph===hph&&hEff(s)!=="保留");
@@ -1135,10 +1153,12 @@ function hUcCards(mk){
   const tsum=t=>byT[t].reduce((x,e)=>x+hStkTally(e[0]),0);
   return Object.keys(byT).sort((a,b)=>(tsum(b)-tsum(a))||(byT[b].length-byT[a].length)).map(t=>{
    const c=hTagCol(t),pend=byT[t].filter(e=>hEff(e[1])==="未処理").length,acts=Object.values(soc.actions).filter(a=>a.ph===hph&&a.src===((k==="__none"?"":"UC "+k+"×")+"島「"+t+"」")&&!a.done).length;
-   return '<div style="margin:8px 0 4px;padding:4px 8px;background:'+c[0]+';border-left:4px solid '+c[1]+';border-radius:5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-    +'<b style="font-size:12.5px;color:'+c[2]+'">束：'+esc(t)+'</b><span class="note">'+byT[t].length+'枚・計'+tsum(t)+'票'+(pend?'・<span style="color:#8F2727;font-weight:700">未処理'+pend+'</span>':'・処理済')+'</span>'
-    +'<span style="margin-left:auto"></span>'+(pend?hKindSel("hPromoteBundle('"+jsq(k==="__none"?"":k)+"','"+jsq(t)+"',this.value)"):'')+(acts?'<span class="note">アクション'+acts+'件</span>':'')+'</div>'
-    +byT[t].sort((a,b)=>(hStkTally(b[0])-hStkTally(a[0]))||(a[1].at<b[1].at?-1:1)).map(mk).join('')}).join('')};
+   return '<div style="margin:8px 0;border:2px solid '+c[1]+';border-radius:9px;background:#fff;overflow:hidden">'
+    +'<div style="padding:6px 10px;background:'+c[0]+';display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +'<span style="background:'+c[2]+';color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700">束</span><b style="font-size:13px;color:'+c[2]+'">'+esc(t)+'</b><span class="note">'+byT[t].length+'枚・計'+tsum(t)+'票'+(pend?'・<span style="color:#8F2727;font-weight:700">未処理'+pend+'</span>':'・<span style="color:#0F6E56;font-weight:700">処理済</span>')+'</span>'
+    +'<span style="margin-left:auto"></span>'+(pend?hBundleSel(k==="__none"?"":k,t):'')+(acts?'<span class="note">宿題'+acts+'件</span>':'')+'</div>'
+    +'<div style="padding:6px 8px 2px">'+(pend>1?'<div class="note" style="margin:0 0 4px;font-size:11.5px">原則は上の「まとめて決める」。扱いが分かれる付箋だけ下の個別三択で。</div>':'')
+    +byT[t].sort((a,b)=>(hStkTally(b[0])-hStkTally(a[0]))||(a[1].at<b[1].at?-1:1)).map(mk).join('')+'</div></div>'}).join('')};
  const card=(k)=>{
   const u=byId(k),list=byU[k];
   const pend=list.filter(e=>hEff(e[1])==="未処理").length;
@@ -1151,8 +1171,7 @@ function hUcCards(mk){
      ?'<span style="background:#FDECEC;color:#8F2727;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700">未処理 '+pend+'</span>'
      :'<span style="background:#E1F5EE;color:#0F6E56;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700">処理済</span>')+'</span></div>'
    +'<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin:2px 0">'
-   +(pend?'<button class="btn" style="padding:3px 10px;font-size:12px;background:#0F6E56;color:#fff;border:none" onclick="hPromoteUc(\''+jsq(k)+'\')">未処理を全部まとめてやる</button>':'')
-   +'<span class="note">'+(acts.length?'このUCのアクション：'+acts.length+'件（下部の台帳）':'原則は束（島）ごとに「この束をやる…」で種別を選ぶ。細かく分けたい付箋は個別に三択')+'</span></div>'
+   +'<span class="note">'+(acts.length?'このUCの宿題：'+acts.length+'件（下部の台帳）　':'')+'決める単位は下の<b>束</b>。'+(pend?'<a href="javascript:void(0)" onclick="if(confirm(\'このUCの未処理付箋を全部1件の宿題にします（束を無視）。よろしいですか？\'))hPromoteUc(\''+jsq(k)+'\')" style="font-size:11px;color:#8CA0B3">（UC全体を1件にまとめる）</a>':'')+'</span></div>'
    +bundles(k,list)+'</div>';
  };
  let out=keys.map(card).join('');
@@ -1262,7 +1281,7 @@ function renderHassan(){
    +'<div class="row" style="gap:8px;align-items:center;margin:4px 0"><span>デサイダー（最終判断者）：</span><input value="'+esc(dec)+'" placeholder="この段階の最終判断者" onchange="hSetDecider(this.value)" style="width:140px;padding:3px 7px">'
    +'<button class="btn" style="padding:3px 10px;font-size:12px" onclick="hHoldZero()">票0の未処理を一括保留</button><button class="btn" style="padding:3px 10px;font-size:12px;color:#7A5A00" onclick="hHoldUndo(false)">保留を全部未処理に戻す</button></div>'
    +'0. デサイダーを決める → <b>票0を一括保留</b>で視界から外す（後で棚卸しで拾える）<br>'
-   +'1. 票の多いUCから順に開く。決める単位は<b>束（UC×島）</b>。束の「この束をやる…」で種別を選ぶと、付箋本文をチェックリストに持つ1件のアクションになる<br>'
+   +'1. 票の多いUCから順に開く。決める単位は<b>束（UC×島）</b>。束の緑ボタン「この束をまとめて決める」で やる（種別）／後で／やらない を選ぶ。「やる」は付箋本文をチェックリストに持つ1件の宿題になる<br>'
    +'2. 束で扱いが分かれる付箋だけ、付箋の<b>三択</b>で個別に決める：<b>やる</b>（種別＝記述修正／確認・調査／設計課題／仕様変更、または「その場で対応済み」）／<b>後で</b>（持ち越し先のStep、または保留）／<b>やらない</b>（理由を一行）<br>'
    +'3. 票2以上は議論して決める。票1はデサイダーが即決。意見が割れたら投票結果を参考にデサイダーが決める<br>'
    +'4. 「反映」「UC反映」は選ばない。<b>台帳でアクションを完了チェックすると紐づく付箋に自動で付く</b>（閉ループ）<br>'
